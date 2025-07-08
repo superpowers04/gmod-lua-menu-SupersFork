@@ -25,29 +25,32 @@ function PANEL:Init()
 end
 
 function PANEL:OnMouseReleased( mousecode )
+	if ( mousecode ~= MOUSE_RIGHT ) then return end
 
-	if ( mousecode == MOUSE_RIGHT ) then
-
-		local m = DermaMenu()
+	local m = DermaMenu()
 
 		if ( !self.panel.ToggleMounted:GetDisabled() ) then
-			m:AddOption( "Invert Selection", function() self.panel:InvertSelection() end )
-
-			m:AddSpacer()
-		end
-
-		m:AddOption( "Open Workshop Page", function() if ( !self.Addon ) then return end steamworks.ViewFile( self.Addon.wsid ) end )
+		m:AddOption( "Invert Selection", function() self.panel:InvertSelection() end )
 		m:AddSpacer()
-		if ( steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
-			m:AddOption( "Disable", function() if ( !self.Addon ) then return end steamworks.SetShouldMountAddon( self.Addon.wsid, false ) steamworks.ApplyAddons() end )
-		else
-			m:AddOption( "Enable", function() if ( !self.Addon ) then return end steamworks.SetShouldMountAddon( self.Addon.wsid, true ) steamworks.ApplyAddons() end )
-		end
-		m:AddOption( "Uninstall", function() if ( !self.Addon ) then return end steamworks.Unsubscribe( self.Addon.wsid ) steamworks.ApplyAddons() end ) -- Do we need ApplyAddons here?
-		m:AddSpacer()
-		m:AddOption( "Cancel", function() end )
-		m:Open()
 	end
+	if ( self.Addon ) then
+		m:AddOption( "Open Workshop Page", function() 
+			steamworks.ViewFile( self.Addon.wsid )
+		end)
+		m:AddSpacer()
+		local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
+		m:AddOption( should_mount_addon and "Disable" or "Enable", function() 
+			steamworks.SetShouldMountAddon( self.Addon.wsid, !should_mount_addon )
+			steamworks.ApplyAddons() 
+		end)
+		m:AddOption( "Uninstall", function() 
+			steamworks.Unsubscribe( self.Addon.wsid )
+			steamworks.ApplyAddons() 
+		end) -- Do we need ApplyAddons here?
+	end
+	m:AddSpacer()
+	m:AddOption( "Cancel", function() end )
+	m:Open()
 
 end
 
@@ -68,7 +71,6 @@ function PANEL:SetAddon( data )
 	if ( gDataTable[ data.wsid ] ) then self.AdditionalData = gDataTable[ data.wsid ] return end
 
 	steamworks.FileInfo( data.wsid, function( result )
-
 		gDataTable[ data.wsid ] = result
 
 		if ( !file.Exists( "cache/workshop/" .. result.previewid .. ".cache", "MOD" ) ) then
@@ -110,15 +112,11 @@ function PANEL:Paint( w, h )
 		draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 255 ) )
 	end
 
-	if ( self.Image ) then
-		surface.SetMaterial( self.Image )
-	else
-		surface.SetMaterial( missingMat )
-	end
+	surface.SetMaterial( self.Image or missingMat)
 	local imageSize = self:GetTall() - 10
 	surface.SetDrawColor( color_white )
 	surface.DrawTexturedRect( 5, 5, imageSize, imageSize )
-
+	if not self.Addon then return end
 	if ( gDataTable[ self.Addon.wsid ] ) then
 		local ratio = gDataTable[ self.Addon.wsid ].score
 		local x = math.floor( ( self:GetWide() - 10 ) * ratio )
@@ -136,7 +134,7 @@ function PANEL:Paint( w, h )
 		draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 180 ) )
 	end]]
 
-	if ( self.Addon and self.Hovered ) then
+	if ( self.Hovered ) then
 		draw.RoundedBox( 0, 5, h - 25, w - 10, 15, Color( 0, 0, 0, 180 ) )
 		draw.SimpleText( self.Addon.title, "Default", 8, h - 24, Color( 255, 255, 255 ) )
 	end
@@ -260,6 +258,8 @@ local Grouping = {
 
 local BackgroundColor = Color( 200, 200, 200, 128 )
 local BackgroundColor2 = Color( 200, 200, 200, 255 ) --Color( 0, 0, 0, 100 )
+local searchQuery = nil
+
 
 local PANEL = {}
 
@@ -271,6 +271,23 @@ function PANEL:Init()
 	Categories:DockPadding( 5, 200, 5, 5 )
 	Categories:Dock( LEFT )
 	Categories:SetWide( 200 )
+
+
+	--[[ ------------------------------------------------------------------------- ]]
+
+	local searchBar = vgui.Create( "DFancyTextEntry", Categories )
+	searchBar:Dock( TOP )
+	searchBar:SetFont( "DermaRobotoDefault" )
+	searchBar:SetPlaceholderText( "searchbar_placeholer" )
+	searchBar:DockMargin( 0, 0, 0, 0 )
+	searchBar:SetZPos( -1 )
+	searchBar:SetHeight( 24 )
+	searchBar:SetUpdateOnType( true )
+	searchBar.OnValueChange = function() 
+		searchQuery = searchBar:GetText():lower()
+		if( searchQuery == "" ) then searchQuery = nil end
+		self:RefreshAddons()
+	end
 
 	--[[ ------------------------------------------------------------------------- ]]
 
@@ -379,10 +396,24 @@ function PANEL:Think()
 	local onlyEnabled = true
 	local onlyDisabled = true
 	for id, pnl in pairs( self.AddonList:GetChildren() ) do
-		if ( pnl.GetSelected and pnl:GetSelected() ) then anySelected = true end
-		if ( pnl.GetSelected and !pnl:GetSelected() ) then allSelected = false end
-		if ( pnl.Addon and !steamworks.ShouldMountAddon( pnl.Addon.wsid ) ) then onlyEnabled = false end
-		if ( pnl.Addon and steamworks.ShouldMountAddon( pnl.Addon.wsid ) ) then onlyDisabled = false end
+		if ( pnl.GetSelected and pnl:GetSelected() ) then 
+			if( pnl:GetSelected() ) then
+				anySelected = true
+			else
+				allSelected = false
+			end
+
+		end
+		if ( pnl.Addon ) then
+			if(steamworks.ShouldMountAddon( pnl.Addon.wsid )) then
+				onlyDisabled = false
+			else
+				onlyEnabled = false
+			end
+		end
+		if(anySelected || not onlyDisabled || not onlyEnabled) then
+			break
+		end
 	end
 	self.ToggleMounted:SetDisabled( !anySelected )
 	self.EnableSelection:SetDisabled( !anySelected or onlyEnabled )
@@ -394,7 +425,7 @@ end
 
 function PANEL:ToggleSelected()
 	for id, pnl in pairs( self.AddonList:GetChildren() ) do
-		if ( !pnl.GetSelected or !pnl:GetSelected() ) then continue end
+		if ( !pnl.GetSelected || !pnl:GetSelected() ) then continue end
 		steamworks.SetShouldMountAddon( pnl.Addon.wsid, !steamworks.ShouldMountAddon( pnl.Addon.wsid ) )
 	end
 	steamworks.ApplyAddons()
@@ -455,7 +486,7 @@ function PANEL:RefreshAddons()
 
 		local addns = {}
 		for k, mod in pairs( group.addons ) do
-			if ( !AddonFilters[ filter ].func( mod ) ) then continue end
+			if ( (searchQuery && !mod.title:lower():match( searchQuery ) ) || !AddonFilters[ filter ].func( mod ) ) then continue end
 			table.insert( addns, mod )
 		end
 

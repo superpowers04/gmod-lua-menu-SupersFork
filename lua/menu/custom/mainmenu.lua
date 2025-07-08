@@ -170,7 +170,6 @@ function PANEL:Paint()
 
 	end
 
-	DrawBackground()
 
 end
 
