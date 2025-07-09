@@ -25,11 +25,16 @@ function PANEL:Init()
 end
 
 function PANEL:OnMouseReleased( mousecode )
-	if ( mousecode ~= MOUSE_RIGHT ) then return end
+	if ( mousecode ~= MOUSE_RIGHT ) then 
+		if(input.IsShiftDown()) then
+			self:SetSelected(!self:GetSelected())
+		end
+		return
+	end
 
 	local m = DermaMenu()
 
-		if ( !self.panel.ToggleMounted:GetDisabled() ) then
+	if ( !self.panel.ToggleMounted:GetDisabled() ) then
 		m:AddOption( "Invert Selection", function() self.panel:InvertSelection() end )
 		m:AddSpacer()
 	end
@@ -88,6 +93,17 @@ end
 local missingMat = Material( "../html/img/addonpreview.png", "nocull smooth" )
 local lastBuild = 0
 local imageCache = {}
+local selectedColor, enabledColor, disabledColor = Color( 0, 150, 255, 255 ), Color( 160, 255, 160, 255 ), Color( 100, 100, 100, 255 )
+
+-- local byteSizes = {"b","kb",'mb','gb','tb'}
+-- local function toFriendlySize(s)
+-- 	local i = 1
+-- 	while s/1024>0 do
+-- 		i=i+1
+-- 		s = s/1024
+-- 	end
+-- 	return s .. byteSizes
+-- end
 function PANEL:Paint( w, h )
 
 	if ( IsValid( self.DermaCheckbox ) ) then
@@ -105,38 +121,34 @@ function PANEL:Paint( w, h )
 	end
 
 	if ( self:GetSelected() ) then
-		draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 150, 255, 200 ) )
-	elseif ( self.Addon and steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
-		draw.RoundedBox( 4, 0, 0, w, h, Color( 255, 255, 255, 200 ) )
+		draw.RoundedBox( 4, 0, 0, w, h, selectedColor )
+	end
+	if ( self.Addon and steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
+		draw.RoundedBox( 4, 2, 2, w-4, h-4, enabledColor )
 	else
-		draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 255 ) )
+		draw.RoundedBox( 4, 2, 2, w-4, h-4, disabledColor )
 	end
 
 	surface.SetMaterial( self.Image or missingMat)
+	local tall,wide = self:GetTall(),self:GetWide()
 	local imageSize = self:GetTall() - 10
 	surface.SetDrawColor( color_white )
 	surface.DrawTexturedRect( 5, 5, imageSize, imageSize )
 	if not self.Addon then return end
-	if ( gDataTable[ self.Addon.wsid ] ) then
-		local ratio = gDataTable[ self.Addon.wsid ].score
-		local x = math.floor( ( self:GetWide() - 10 ) * ratio )
-
-		for i = -5, -1 do
-			surface.SetDrawColor( Color( 255, 0, 0, 128 ) )
-			surface.DrawLine( 5 + x, self:GetTall() - 5 + i, 4 + ( self:GetWide() - 10 ), self:GetTall() - 5 + i )
-
-			surface.SetDrawColor( Color( 0, 255, 0, 128 ) )
-			surface.DrawLine( 5, self:GetTall() - 5 + i, 5 + x, self:GetTall() - 5 + i )
-		end
-	end
 
 	--[[if ( self.Addon and !steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
 		draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 180 ) )
 	end]]
 
 	if ( self.Hovered ) then
-		draw.RoundedBox( 0, 5, h - 25, w - 10, 15, Color( 0, 0, 0, 180 ) )
-		draw.SimpleText( self.Addon.title, "Default", 8, h - 24, Color( 255, 255, 255 ) )
+		draw.RoundedBox( 0, 5, h - 20, w - 10, 15, Color( 0, 0, 0, 180 ) )
+		local title = self.Addon.title
+		local tw = surface.GetTextSize( title )
+		if ( tw > w ) then
+			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + ( ( w - tw ) * math.sin( CurTime() ) ), h - 15, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		else
+			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2, h - 15, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		end
 	end
 
 end
@@ -279,7 +291,7 @@ function PANEL:Init()
 	searchBar:Dock( TOP )
 	searchBar:SetFont( "DermaRobotoDefault" )
 	searchBar:SetPlaceholderText( "searchbar_placeholer" )
-	searchBar:DockMargin( 0, 0, 0, -5 )
+	searchBar:DockMargin( 0, 0, 0, 20 )
 	searchBar:SetZPos( -1 )
 	searchBar:SetHeight( 24 )
 	searchBar:SetUpdateOnType( true )
