@@ -148,7 +148,7 @@ vgui.Register( "MenuAddon", PANEL, "Panel" )
 local AddonFilters = {
 	none = {
 		label = "None",
-		func = function( mod )
+		func = function()
 			return true
 		end
 	},
@@ -177,23 +177,23 @@ local Grouping = {
 		label = "Enabled",
 		func = function( addons )
 			local t = {
-				enabled = {
+				[true] = {
 					title = "Enabled",
 					addons = {}
 				},
-				disabled = {
+				[false] = {
 					title = "Disabled",
 					addons = {}
 				}
 			}
 
 			for _, addon in pairs( engine.GetAddons() ) do
-				if ( addon.mounted ) then
-					table.insert( t.enabled.addons, addon )
-				else
-					table.insert( t.disabled.addons, addon )
-				end
+				table.insert( t[ addon.mounted ].addons, addon ) -- if addon.mounted ever returns nil, I'm going to cry
 			end
+			t.enabled = t[true]
+			t.disabled = t[false]
+			t[true]=nil
+			t[false]=nil
 
 			return t
 		end
@@ -208,22 +208,22 @@ local Grouping = {
 				}
 			}
 
+			local Ptags = { ['server content'] = "Server Content",servercontent = "Server Content", effects = "Effects", model = "Model", gamemode = "Gamemode", npc = "NPC", tool = "Tool", vehicle = "Vehicle", weapon = "Weapon", map = "Map" }
 			for _, addon in pairs( engine.GetAddons() ) do
 				if ( !gDataTable[ addon.wsid ] ) then
 					table.insert( t.noinfo.addons, addon )
-				else
-					local Ptags = { servercontent = "Server Content", effects = "Effects", model = "Model", gamemode = "Gamemode", npc = "NPC", tool = "Tool", vehicle = "Vehicle", weapon = "Weapon", map = "Map" }
-					local tags = string.Explode( ",", gDataTable[ addon.wsid ].tags )
-					for _, tag in pairs( tags ) do
-						if ( tag == "Addon" ) then continue end -- Don't duplicate ALL addons
-						if ( !Ptags[ tag:lower() ] ) then tag = "Other" end
-						tag = Ptags[ tag:lower() ] or tag
-						if ( !t[ tag ] ) then t[ tag ] = { title = tag, addons = {} } end
-
-						table.insert( t[ tag ].addons, addon )
-						break
-					end
+					continue
 				end
+				local tags = (","):Explode(gDataTable[ addon.wsid ].tags )
+				for _, tag in pairs( tags ) do
+					if ( tag == "Addon" ) then continue end -- Don't duplicate ALL addons
+					tag = Ptags[ tag:lower() ] or "Other"
+					if ( !t[ tag ] ) then t[ tag ] = { title = tag, addons = {} } end
+
+					table.insert( t[ tag ].addons, addon )
+					break
+				end
+				
 			end
 
 			return t
@@ -279,7 +279,7 @@ function PANEL:Init()
 	searchBar:Dock( TOP )
 	searchBar:SetFont( "DermaRobotoDefault" )
 	searchBar:SetPlaceholderText( "searchbar_placeholer" )
-	searchBar:DockMargin( 0, 0, 0, 0 )
+	searchBar:DockMargin( 0, 0, 0, -5 )
 	searchBar:SetZPos( -1 )
 	searchBar:SetHeight( 24 )
 	searchBar:SetUpdateOnType( true )
@@ -411,7 +411,7 @@ function PANEL:Think()
 				onlyEnabled = false
 			end
 		end
-		if(anySelected || not onlyDisabled || not onlyEnabled) then
+		if(anySelected && not onlyDisabled && not onlyEnabled) then
 			break
 		end
 	end
@@ -486,7 +486,7 @@ function PANEL:RefreshAddons()
 
 		local addns = {}
 		for k, mod in pairs( group.addons ) do
-			if ( (searchQuery && !mod.title:lower():match( searchQuery ) ) || !AddonFilters[ filter ].func( mod ) ) then continue end
+			if ( (searchQuery && mod.title && !mod.title:lower():find( searchQuery ) ) || !AddonFilters[ filter ].func( mod ) ) then continue end
 			table.insert( addns, mod )
 		end
 
