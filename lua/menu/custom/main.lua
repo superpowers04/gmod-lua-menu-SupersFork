@@ -102,6 +102,14 @@ function PANEL:Init()
 		self:GetParent():OpenAddonsMenu()
 	end
 
+	local AddonPacks = vgui.Create( "MenuButton", mainButtons )
+	AddonPacks:Dock( TOP )
+	AddonPacks:DockMargin( 5, 20, 5, 0 )
+	AddonPacks:SetText( "Addon Packs(UNFINISHED!)" )
+	AddonPacks.DoClick = function()
+		self:GetParent():OpenAddonPacksMenu()
+	end
+
 	local Saves = vgui.Create( "MenuButton", mainButtons )
 	Saves:Dock( TOP )
 	Saves:DockMargin( 5, 0, 5, 0 )

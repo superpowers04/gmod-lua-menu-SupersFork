@@ -3,6 +3,7 @@ ScreenScale = function( size ) return size * ( ScrW() / 640.0 ) end
 
 include( "getmaps.lua" )
 include( "addons.lua" )
+include( "addon_packs.lua" )
 include( "new_game.lua" )
 include( "saves.lua" )
 include( "achievements.lua" )
@@ -73,8 +74,10 @@ vgui.Register( "DMenuButton", PANEL, "DButton" )
 
 local PANEL = {}
 
+
 function PANEL:Init()
 
+	self.currentFrame = nil
 	self:Dock( FILL )
 	self:SetKeyboardInputEnabled( true )
 	self:SetMouseInputEnabled( true )
@@ -156,11 +159,9 @@ end
 
 function PANEL:Paint()
 
-	if ( !IsValid( self.NewGameFrame ) and !IsValid( self.AddonsFrame ) and !IsValid( self.AchievementsFrame ) and !IsValid( self.SavesFrame ) ) then
-		self.BackButton:SetVisible( false )
-	else
-		self.BackButton:SetVisible( true )
-	end
+
+	self.BackButton:SetVisible( self.currentFrame != self.MainMenuPanel && IsValid( self.currentFrame ) )
+	
 
 	if ( self.IsInGame != IsInGame() ) then
 
@@ -180,11 +181,12 @@ function PANEL:ClosePopups( b )
 end
 
 function PANEL:CloseAllMenus()
-	if ( IsValid( self.MainMenuPanel ) ) then self.MainMenuPanel:Remove() end
-	if ( IsValid( self.NewGameFrame ) ) then self.NewGameFrame:Remove() end
-	if ( IsValid( self.AddonsFrame ) ) then self.AddonsFrame:Remove() end
-	if ( IsValid( self.AchievementsFrame ) ) then self.AchievementsFrame:Remove() end
-	if ( IsValid( self.SavesFrame ) ) then self.SavesFrame:Remove() end
+	if ( IsValid( self.currentFrame) ) then self.currentFrame:Remove() end
+	-- if ( IsValid( self.MainMenuPanel ) ) then self.MainMenuPanel:Remove() end
+	-- if ( IsValid( self.NewGameFrame ) ) then self.NewGameFrame:Remove() end
+	-- if ( IsValid( self.AddonsFrame ) ) then self.AddonsFrame:Remove() end
+	-- if ( IsValid( self.AchievementsFrame ) ) then self.AchievementsFrame:Remove() end
+	-- if ( IsValid( self.SavesFrame ) ) then self.SavesFrame:Remove() end
 end
 
 function PANEL:Back()
@@ -198,14 +200,24 @@ function PANEL:OpenMainMenu( b )
 
 	local frame = vgui.Create( "MainMenuScreenPanel", self )
 	self.MainMenuPanel = frame
+	self.currentFrame = frame
 end
 
+function PANEL:OpenAddonPacksMenu( b )
+	self:CloseAllMenus()
+	self:ClosePopups( b )
+
+	local frame = vgui.Create( "AddonPacksPanel", self )
+	self.AddonPacksFrame = frame
+	self.currentFrame = frame
+end
 function PANEL:OpenAddonsMenu( b )
 	self:CloseAllMenus()
 	self:ClosePopups( b )
 
 	local frame = vgui.Create( "AddonsPanel", self )
 	self.AddonsFrame = frame
+	self.currentFrame = frame
 end
 
 function PANEL:OpenCreationMenu( b, typ )
@@ -214,6 +226,7 @@ function PANEL:OpenCreationMenu( b, typ )
 
 	local frame = vgui.Create( "SavesPanel", self )
 	self.SavesFrame = frame
+	self.currentFrame = frame
 	self.SavesFrame:SetType( typ )
 end
 
@@ -223,6 +236,7 @@ function PANEL:OpenAchievementsMenu( b )
 
 	local frame = vgui.Create( "AchievementsPanel", self )
 	self.AchievementsFrame = frame
+	self.currentFrame = frame
 end
 
 function PANEL:OpenNewGameMenu( b )
@@ -231,6 +245,7 @@ function PANEL:OpenNewGameMenu( b )
 
 	local frame = vgui.Create( "NewGamePanel", self )
 	self.NewGameFrame = frame
+	self.currentFrame = frame
 
 	hook.Run( "MenuStart" )
 end
@@ -380,8 +395,7 @@ function PANEL:RefreshGamemodes( b )
 
 	self:UpdateBackgroundImages()
 
-	if ( IsValid( self.NewGameFrame ) ) then self.NewGameFrame:Update() end
-	if ( IsValid( self.AddonsFrame ) ) then self.AddonsFrame:Update() end
+	if ( IsValid( self.currentFrame ) && self.currentFrame.Update) then self.currentFrame:Update() end
 	--if ( IsValid( self.NewGameFrame ) ) then self:OpenNewGameMenu( b ) end
 	--if ( IsValid( self.AddonsFrame ) ) then self:OpenAddonsMenu( b ) end
 	--if ( IsValid( self.MainMenuPanel ) ) then self:OpenMainMenu( b ) end
@@ -462,6 +476,7 @@ function LanguageChanged( lang )
 	local pnl = pnlMainMenu
 	if ( IsValid( pnl.NewGameFrame ) ) then pnl.NewGameFrame:UpdateLanguage() end
 	if ( IsValid( pnl.AddonsFrame ) ) then pnl:OpenAddonsMenu() end
+	if ( IsValid( pnl.AddonPacksFrame ) ) then pnl:OpenAddonPacksMenu() end
 	if ( IsValid( pnl.MainMenuPanel ) ) then pnl:OpenMainMenu() end
 	if ( IsValid( pnl.AchievementsFrame ) ) then pnl:OpenAchievementsMenu() end
 	if ( IsValid( pnl.SavesFrame ) ) then pnl:OpenCreationMenu() end

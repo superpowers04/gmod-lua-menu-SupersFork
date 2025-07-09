@@ -144,11 +144,11 @@ function PANEL:Paint( w, h )
 		draw.RoundedBox( 0, 5, h - 20, w - 10, 15, Color( 0, 0, 0, 180 ) )
 		local title = self.Addon.title
 		local tw = surface.GetTextSize( title )
+		local offset = 0
 		if ( tw > w ) then
-			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + ( ( w - tw ) * math.sin( CurTime() ) ), h - 15, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
-		else
-			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2, h - 15, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+			offset=( ( w - tw ) * math.sin( CurTime() ) )
 		end
+		draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 24, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 	end
 
 end
