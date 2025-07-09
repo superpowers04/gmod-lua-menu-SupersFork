@@ -1,3 +1,9 @@
+Superpowers04's fork of [Garry's Mod Lua Main Menu](https://github.com/robotboy655/gmod-lua-menu)
+=============
+A fork that fixes some issues, adds a search bar and some QOL changes to [Garry's Mod Lua Main Menu](https://github.com/robotboy655/gmod-lua-menu) by robotboy655
+The ONLY reason why this hasn't been pr'd is because I use a different programming style that doesn't entirely conform to the CONTRIBUTING.md
+
+
 Garry's Mod Lua Main Menu
 =============
 
