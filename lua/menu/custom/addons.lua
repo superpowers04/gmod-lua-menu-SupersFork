@@ -36,7 +36,7 @@ end
 
 function addon_obj:OnDoubleClick( mousecode )
 	if ( mousecode ~= MOUSE_RIGHT ) then 
-		steamworks.SetShouldMountAddon( self.Addon.wsid, !should_mount_addon )
+		steamworks.SetShouldMountAddon( self.Addon.wsid, !steamworks.ShouldMountAddon(self.Addon.wsid) )
 		PANEL.anyAddonChanged = true
 		return
 	end
