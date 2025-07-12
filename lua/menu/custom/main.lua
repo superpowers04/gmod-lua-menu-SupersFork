@@ -66,7 +66,7 @@ function PANEL:Init()
 		---draw.RoundedBox( 0, 0, 0, w, h, Color( 0, 0, 0, 200 ) )
 		self:SetPos( ScrW() / 20, math.max( ScrH() / 2 - self:GetTall() / 2, 150 ) )
 	end
-	mainButtons:SetSize( 250, 350 )
+	mainButtons:SetSize( 250, 450 )
 	self.MenuButtons = mainButtons
 
 	local Resume = vgui.Create( "MenuButton", mainButtons )

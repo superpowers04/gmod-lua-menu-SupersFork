@@ -9,9 +9,19 @@ surface.CreateFont( "rb655_AddonDesc", {
 	font = "Tahoma"
 } )
 
-local PANEL = {}
 
-function PANEL:Init()
+
+
+local PANEL = {
+	anyAddonChanged=false,
+}
+local BackgroundColor = Color( 200, 200, 200, 128 )
+local BackgroundColor2 = Color( 200, 200, 200, 255 ) --Color( 0, 0, 0, 100 )
+local searchQuery = nil
+local addon_obj = {}
+
+
+function addon_obj:Init()
 	self:SetTall( 200 )
 	self:SetWide( 200 )
 
@@ -24,7 +34,15 @@ function PANEL:Init()
 
 end
 
-function PANEL:OnMouseReleased( mousecode )
+function addon_obj:OnDoubleClick( mousecode )
+	if ( mousecode ~= MOUSE_RIGHT ) then 
+		steamworks.SetShouldMountAddon( self.Addon.wsid, !should_mount_addon )
+		PANEL.anyAddonChanged = true
+		return
+	end
+
+end
+function addon_obj:OnMouseReleased( mousecode )
 	if ( mousecode ~= MOUSE_RIGHT ) then 
 		if(input.IsShiftDown()) then
 			self:SetSelected(!self:GetSelected())
@@ -46,11 +64,11 @@ function PANEL:OnMouseReleased( mousecode )
 		local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
 		m:AddOption( should_mount_addon and "Disable" or "Enable", function() 
 			steamworks.SetShouldMountAddon( self.Addon.wsid, !should_mount_addon )
-			steamworks.ApplyAddons() 
+			PANEL.anyAddonChanged = true
 		end)
 		m:AddOption( "Uninstall", function() 
 			steamworks.Unsubscribe( self.Addon.wsid )
-			steamworks.ApplyAddons() 
+			PANEL.anyAddonChanged = true
 		end) -- Do we need ApplyAddons here?
 	end
 	m:AddSpacer()
@@ -59,19 +77,19 @@ function PANEL:OnMouseReleased( mousecode )
 
 end
 
-function PANEL:Toggle()
+function addon_obj:Toggle()
 end
 
-function PANEL:SetSelected( b )
+function addon_obj:SetSelected( b )
 	self.DermaCheckbox:SetChecked( b )
 end
 
-function PANEL:GetSelected()
+function addon_obj:GetSelected()
 	return self.DermaCheckbox:GetChecked()
 end
 
 gDataTable = gDataTable or {}
-function PANEL:SetAddon( data )
+function addon_obj:SetAddon( data )
 	self.Addon = data
 	if ( gDataTable[ data.wsid ] ) then self.AdditionalData = gDataTable[ data.wsid ] return end
 
@@ -104,7 +122,7 @@ local selectedColor, enabledColor, disabledColor = Color( 0, 150, 255, 255 ), Co
 -- 	end
 -- 	return s .. byteSizes
 -- end
-function PANEL:Paint( w, h )
+function addon_obj:Paint( w, h )
 
 	if ( IsValid( self.DermaCheckbox ) ) then
 		self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
@@ -153,7 +171,7 @@ function PANEL:Paint( w, h )
 
 end
 
-vgui.Register( "MenuAddon", PANEL, "Panel" )
+vgui.Register( "MenuAddon", addon_obj, "Panel" )
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -268,12 +286,8 @@ local Grouping = {
 	}]] -- Disabled models are reported as "no models" :(
 }
 
-local BackgroundColor = Color( 200, 200, 200, 128 )
-local BackgroundColor2 = Color( 200, 200, 200, 255 ) --Color( 0, 0, 0, 100 )
-local searchQuery = nil
 
 
-local PANEL = {}
 
 function PANEL:Init()
 
@@ -379,6 +393,13 @@ function PANEL:Init()
 	OpenWorkshop:DockMargin( 0, 40, 0, 0 )
 	OpenWorkshop.DoClick = function() steamworks.OpenWorkshop() end
 
+	local OpenWorkshop = vgui.Create( "DButton", Categories )
+	OpenWorkshop:Dock( TOP )
+	OpenWorkshop:SetText( "#Apply Addon Changes" )
+	OpenWorkshop:SetTall( 30 )
+	OpenWorkshop:DockMargin( 0, 5, 0, 0 )
+	OpenWorkshop.DoClick = function() PANEL.anyAddonChanged = false; steamworks.ApplyAddons() end
+
 	------------------- Addon List
 
 	local Scroll = vgui.Create( "DScrollPanel", self )
@@ -440,7 +461,7 @@ function PANEL:ToggleSelected()
 		if ( !pnl.GetSelected || !pnl:GetSelected() ) then continue end
 		steamworks.SetShouldMountAddon( pnl.Addon.wsid, !steamworks.ShouldMountAddon( pnl.Addon.wsid ) )
 	end
-	steamworks.ApplyAddons()
+	PANEL.anyAddonChanged = true
 end
 
 function PANEL:DisableSelected()
@@ -448,7 +469,7 @@ function PANEL:DisableSelected()
 		if ( !pnl.GetSelected or !pnl:GetSelected() ) then continue end
 		steamworks.SetShouldMountAddon( pnl.Addon.wsid, false )
 	end
-	steamworks.ApplyAddons()
+	PANEL.anyAddonChanged = true
 end
 
 function PANEL:EnableSelected()
@@ -456,7 +477,7 @@ function PANEL:EnableSelected()
 		if ( !pnl.GetSelected or !pnl:GetSelected() ) then continue end
 		steamworks.SetShouldMountAddon( pnl.Addon.wsid, true )
 	end
-	steamworks.ApplyAddons()
+	PANEL.anyAddonChanged = true
 end
 
 function PANEL:InvertSelection()
@@ -464,6 +485,7 @@ function PANEL:InvertSelection()
 		if ( !pnl.GetSelected ) then continue end
 		pnl:SetSelected( !pnl:GetSelected() )
 	end
+	PANEL.anyAddonChanged = true
 end
 
 function PANEL:DeselectAll()
@@ -471,6 +493,7 @@ function PANEL:DeselectAll()
 		if ( !pnl.GetSelected ) then continue end
 		pnl:SetSelected( false )
 	end
+	PANEL.anyAddonChanged = true
 end
 
 function PANEL:SelectAll()
@@ -483,6 +506,16 @@ end
 function PANEL:Update()
 	self:RefreshAddons()
 end
+
+function PANEL:OnRemove()
+	self:TryAddonReload()
+end
+function PANEL:TryAddonReload()
+	if(!PANEL.anyAddonChanged) then return end
+	steamworks.ApplyAddons() 
+	PANEL.anyAddonChanged = false
+end
+
 
 function PANEL:RefreshAddons()
 

@@ -1,6 +1,7 @@
 
 if(!file.IsDir('addon_packs_smmenu','DATA')) then file.CreateDir('addon_packs_smmenu') end
 local PANEL = {}
+local searchQuery = nil
 
 function PANEL:Init()
 	self:Dock( FILL )
@@ -102,7 +103,6 @@ function PANEL:selectPack(path)
 	steamworks.ApplyAddons() 
 	self:GetParent():OpenAddonPacksMenu()
 end
-local searchQuery = nil
 
 function PANEL:RegenerateList()
 

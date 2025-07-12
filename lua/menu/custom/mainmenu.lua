@@ -28,37 +28,38 @@ function PANEL:Paint( w, h )
 		if ( self.Hovered ) then clr = Color( 255, 255, 220 ) end
 		if ( self.Depressed ) then self:SetFGColor( color_white ) clr = Color( 35, 150, 255 ) end
 		draw.RoundedBox( 4, 0, 0, w, h, clr )
-	else
-		self:SetFGColor( color_white )
-		local clr = Color( 0, 134, 204 )
-		if ( self.Hovered ) then clr = Color( 34, 168, 238 ) end
-		if ( self.Depressed ) then clr = Color( 0, 134, 204 ) end
-		--draw.RoundedBox( 4, 0, 0, w, h, clr )
-
-		surface.SetDrawColor( clr )
-		surface.DrawRect( 1, 1, w - 2, h - 2 )
-
-		surface.SetDrawColor( Color( 0, 85, 204 ) )
-		if ( self.Hovered ) then clr = surface.SetDrawColor( Color( 34, 119, 238 ) ) end
-		surface.SetMaterial( matGradientUp )
-		surface.DrawTexturedRect( 1, 1, w - 2, h - 2 )
-
-		surface.SetDrawColor( Color( 0, 85, 204 ) )
-		--surface.DrawOutlinedRect( 0, 0, w, h )
-
-		surface.DrawLine( 1, 0, w-1, 0 ) -- top
-		surface.DrawLine( 0, 1, 0, h - 1 ) -- left
-		surface.DrawLine( w - 1, 1, w - 1, h - 1 ) -- right
-
-		surface.SetDrawColor( Color( 0, 53, 128 ) )
-		surface.DrawLine( 1, h - 1, w-1, h - 1 ) -- bottom
-
-		local clr2 = Color( 52, 160, 214 )
-		if ( self.Hovered ) then clr2 = Color( 79, 187, 241 ) end
-		if ( self.Depressed ) then clr2 = Color( 52, 160, 214 ) end
-		surface.SetDrawColor( clr2 )
-		surface.DrawLine( 1, 1, w - 1, 1 )
+		return
 	end
+	self:SetFGColor( color_white )
+	local clr = Color( 0, 134, 204 )
+	if ( self.Hovered ) then clr = Color( 34, 168, 238 ) end
+	if ( self.Depressed ) then clr = Color( 0, 134, 204 ) end
+	--draw.RoundedBox( 4, 0, 0, w, h, clr )
+
+	surface.SetDrawColor( clr )
+	surface.DrawRect( 1, 1, w - 2, h - 2 )
+
+	surface.SetDrawColor( Color( 0, 85, 204 ) )
+	if ( self.Hovered ) then clr = surface.SetDrawColor( Color( 34, 119, 238 ) ) end
+	surface.SetMaterial( matGradientUp )
+	surface.DrawTexturedRect( 1, 1, w - 2, h - 2 )
+
+	surface.SetDrawColor( Color( 0, 85, 204 ) )
+	--surface.DrawOutlinedRect( 0, 0, w, h )
+
+	surface.DrawLine( 1, 0, w-1, 0 ) -- top
+	surface.DrawLine( 0, 1, 0, h - 1 ) -- left
+	surface.DrawLine( w - 1, 1, w - 1, h - 1 ) -- right
+
+	surface.SetDrawColor( Color( 0, 53, 128 ) )
+	surface.DrawLine( 1, h - 1, w-1, h - 1 ) -- bottom
+
+	local clr2 = Color( 52, 160, 214 )
+	if ( self.Hovered ) then clr2 = Color( 79, 187, 241 ) end
+	if ( self.Depressed ) then clr2 = Color( 52, 160, 214 ) end
+	surface.SetDrawColor( clr2 )
+	surface.DrawLine( 1, 1, w - 1, 1 )
+	
 end
 
 function PANEL:PerformLayout( w, h )
@@ -181,7 +182,13 @@ function PANEL:ClosePopups( b )
 end
 
 function PANEL:CloseAllMenus()
-	if ( IsValid( self.currentFrame) ) then self.currentFrame:Remove() end
+	local currentFrame = self.currentFrame
+	if ( IsValid( currentFrame) ) then 
+		if(currentFrame.OnRemove) then
+			currentFrame:OnRemove()
+		end
+		currentFrame:Remove()
+	end
 	-- if ( IsValid( self.MainMenuPanel ) ) then self.MainMenuPanel:Remove() end
 	-- if ( IsValid( self.NewGameFrame ) ) then self.NewGameFrame:Remove() end
 	-- if ( IsValid( self.AddonsFrame ) ) then self.AddonsFrame:Remove() end
