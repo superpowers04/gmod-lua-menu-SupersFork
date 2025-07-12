@@ -34,16 +34,12 @@ function addon_obj:Init()
 
 end
 
-function addon_obj:OnDoubleClick( mousecode )
-	if ( mousecode ~= MOUSE_RIGHT ) then 
+function addon_obj:OnMouseReleased( mousecode )
+	if ( mousecode == MOUSE_MIDDLE ) then 
 		steamworks.SetShouldMountAddon( self.Addon.wsid, !steamworks.ShouldMountAddon(self.Addon.wsid) )
 		PANEL.anyAddonChanged = true
 		return
-	end
-
-end
-function addon_obj:OnMouseReleased( mousecode )
-	if ( mousecode ~= MOUSE_RIGHT ) then 
+	elseif ( mousecode ~= MOUSE_RIGHT ) then 
 		if(input.IsShiftDown()) then
 			self:SetSelected(!self:GetSelected())
 		end
@@ -405,6 +401,10 @@ function PANEL:Init()
 	local Scroll = vgui.Create( "DScrollPanel", self )
 	Scroll:Dock( FILL )
 	Scroll:DockMargin( 0, 5, 5, 5 )
+	function Scroll:Paint( w, h )
+		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor, false, true, false, true )
+		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor2, false, true, false, true )
+	end
 
 	local AddonList = vgui.Create( "DIconLayout", Scroll )
 	AddonList:SetSpaceX( 5 )
@@ -413,15 +413,11 @@ function PANEL:Init()
 	AddonList:DockMargin( 5, 5, 5, 5 )
 	AddonList:DockPadding( 5, 5, 5, 10 )
 
-	function Scroll:Paint( w, h )
-		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor, false, true, false, true )
-		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor2, false, true, false, true )
-	end
-
 	self.AddonList = AddonList
 	self:RefreshAddons()
 
 end
+
 
 function PANEL:Think()
 	local anySelected = false

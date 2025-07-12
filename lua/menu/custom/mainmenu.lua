@@ -15,7 +15,6 @@ include( "../crosshair_setup.lua" )
 pnlMainMenu = nil
 
 local PANEL = {}
-
 function PANEL:SetSpecial( b )
 	self.Special = b
 end
@@ -522,6 +521,13 @@ timer.Simple( 0, function()
 	pnlMainMenu = vgui.Create( "MainMenuPanel" )
 
 	hook.Run( "GameContentChanged" )
+
+	concommand.Add( "reload_mmenu", function( ply, cmd, args, str )
+		pnlMainMenu:Remove()
+		include( "menu/custom/mainmenu.lua" )
+		pnlMainMenu = vgui.Create( "MainMenuPanel")
+	end )
+
 end )
 
 -- A hack to bring the console to front when menu_reload is ran
