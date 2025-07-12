@@ -12,14 +12,12 @@ function PANEL:Init()
 	self.Options = Options
 
 
-	local searchBar = vgui.Create( "DFancyTextEntry", Options)
+	local searchBar = vgui.Create( "DFancyTextEntry", Options, 'searchBar')
 	searchBar:Dock( TOP )
 	searchBar:SetFont( "DermaRobotoDefault" )
 	searchBar:SetPlaceholderText( "searchbar_placeholer" )
 	searchBar:SetText(searchQuery or "")
 	searchBar:DockMargin( 0, 0, 0, 50 )
-	searchBar:SetZPos( -1 )
-	searchBar:SetHeight( 24 )
 	searchBar:SetUpdateOnType( true )
 	searchBar.OnValueChange = function() 
 		searchQuery = searchBar:GetText():lower()
@@ -28,23 +26,17 @@ function PANEL:Init()
 	end
 
 
-
-	local FilenameBar = vgui.Create( "DFancyTextEntry", Options )
+	local FilenameBar = vgui.Create( "DFancyTextEntry", Options, 'FilenameBar')
 	FilenameBar:Dock( TOP )
 	FilenameBar:SetFont( "DermaRobotoDefault" )
 	FilenameBar:SetPlaceholderText( "filename" )
 	FilenameBar:DockMargin( 0, 40, 0, 0 )
-	FilenameBar:SetZPos( -1 )
-	FilenameBar:SetHeight( 24 )
-	FilenameBar:SetUpdateOnType( true )
 	self.FilenameBar = FilenameBar
 
-	local SavePackButton = vgui.Create( "DButton", Options )
+	local SavePackButton = vgui.Create( "DButton", Options, 'SavePackButton')
 	SavePackButton:Dock( TOP )
 	SavePackButton:SetText( "#Save addon pack" )
-	SavePackButton:SetTall( 30 )
-	SavePackButton:SetWide( 50 )
-	SavePackButton:DockMargin( 0, 50, 0, 0 )
+	-- SavePackButton:DockMargin( 0, 50, 0, 0 )
 	SavePackButton.DoClick = function() 
 		local filename = FilenameBar:GetText()
 		if(filename == "") then
@@ -98,7 +90,7 @@ function PANEL:selectPack(path)
 		steamworks.SetShouldMountAddon( addon.wsid, false )
 	end
 	for id in contents:gmatch('\n([^ ]+)') do
-		steamworks.SetShouldMountAddon( addon.wsid, true)
+		steamworks.SetShouldMountAddon( id, true)
 	end
 	steamworks.ApplyAddons() 
 	self:GetParent():OpenAddonPacksMenu()
@@ -113,34 +105,32 @@ function PANEL:RegenerateList()
 
 	if(table.Count(f) < 1) then
 
-		local SavePackButton = vgui.Create( "DButton" , List )
-		SavePackButton:Dock( TOP )
-		SavePackButton:SetText( "#No packs found" )
-		SavePackButton:SetTall( 30 )
-		SavePackButton:SetWide( 30 )
-		SavePackButton:DockMargin( 0, 50, 0, 0 )
+		local ErrorButton = vgui.Create( "DButton" , List ) -- This is honestly stupid but other issues are more important
+		ErrorButton:Dock( TOP )
+		ErrorButton:SetText( "#No packs found" )
+		ErrorButton:SetTall( 30 )
+		ErrorButton:SetWide( 30 )
+		ErrorButton:DockMargin( 0, 50, 0, 0 )
 		
 		return
 	end
 
 	for k, v in pairs( f ) do
 		if(searchQuery && !v:lower():find(searchQuery)) then continue end
-		local ListItem = List:Add( "DButton")
-		ListItem:SetTall( 30 )
-		ListItem:SetWide( 30 )
+		local ListItem = vgui.Create( "DButton" , List, 'button-'..v)
 		ListItem:SetText( v:StripExtension() )
 		ListItem.DoDoubleClick = function()
 			select(v)
 		end
-		ListItem.DoClick = function()
-			self.FilenameBar:SetText(v:StripExtension())
-		end
+		-- ListItem.DoClick = function()
+		-- 	self.FilenameBar:SetText(v:StripExtension())
+		-- end
 		ListItem.DoRightClick = function()
 			local m = DermaMenu()
 
 			
 			m:AddOption( "Select", function()
-				select(v)
+				self:selectPack(v)
 			end )
 			m:AddSpacer()
 			m:AddSpacer()
@@ -154,6 +144,7 @@ function PANEL:RegenerateList()
 			m:AddOption( "Cancel" )
 			m:Open()
 		end
+		ListItem.DoClick = ListItem.DoRightClick
 
 	end
 end
