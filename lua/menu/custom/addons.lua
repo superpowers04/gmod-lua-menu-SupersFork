@@ -54,17 +54,23 @@ function addon_obj:OnMouseReleased( mousecode )
 	end
 	if ( self.Addon ) then
 		m:AddOption( "Open Workshop Page", function() 
-			steamworks.ViewFile( self.Addon.wsid )
+			self.queuedAction = function(self) 
+				steamworks.ViewFile( self.Addon.wsid )
+			end
 		end)
 		m:AddSpacer()
 		local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
 		m:AddOption( should_mount_addon and "Disable" or "Enable", function() 
-			steamworks.SetShouldMountAddon( self.Addon.wsid, !should_mount_addon )
-			PANEL.anyAddonChanged = true
+			self.queuedAction = function(self) 
+				steamworks.SetShouldMountAddon( self.Addon.wsid, !should_mount_addon )
+				PANEL.anyAddonChanged = true
+			end
 		end)
 		m:AddOption( "Uninstall", function() 
-			steamworks.Unsubscribe( self.Addon.wsid )
-			PANEL.anyAddonChanged = true
+			self.queuedAction = function(self) 
+				steamworks.Unsubscribe( self.Addon.wsid )
+				PANEL.anyAddonChanged = true
+			end 
 		end) -- Do we need ApplyAddons here?
 	end
 	m:AddSpacer()
@@ -163,6 +169,9 @@ function addon_obj:Paint( w, h )
 			offset=( ( w - tw ) * math.sin( CurTime() ) )
 		end
 		draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 24, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+	end
+	if( self.queuedAction and not self:queuedAction()) then
+		self.queuedAction=nil
 	end
 
 end

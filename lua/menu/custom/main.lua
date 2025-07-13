@@ -22,6 +22,8 @@ function PANEL:Init()
 	self:SetCursor( "hand" )
 	self:SetMouseInputEnabled( true )
 	self:SetTextColor( Color( 255, 255, 255 ) )
+
+
 end
 
 function PANEL:SetText( ... )
