@@ -1,27 +1,52 @@
-
+local searchQuery = nil
 local PANEL = {}
 
 function PANEL:Init()
 	self:Dock( FILL )
+
 end
 
 function PANEL:SetType( typ )
 	self.Type = typ
-
 	self:UpdateList()
 end
 
+
 function PANEL:UpdateList()
-	self:Clear()
+	if(not self.list) then
+		local Options = vgui.Create( "DListLayout", self )
+		Options:DockPadding( 5, 30, 5, 5 )
+		Options:Dock( LEFT )
+		Options:SetWide( 200 )
+		self.Options = Options
+		local Scroll = vgui.Create( "DScrollPanel",  Options, 'ScrollPanel' )
+		Scroll:Dock( FILL )
+		Scroll:DockPadding( 5, 5, 5, 5 )
+		Scroll:SetWide( 200 )
+		self.Scroll = Scroll
 
-	local Scroll = vgui.Create( "DScrollPanel", self )
-	Scroll:Dock( FILL )
-	Scroll:DockMargin( 5, 5, 5, 5 )
+		local List = vgui.Create( "DIconLayout", Scroll )
+		List:Dock( FILL )
+		List:SetSpaceY( 5 )
+		List:SetSpaceX( 5 )
+		self.List = List
 
-	local List = vgui.Create( "DIconLayout", Scroll )
-	List:Dock( FILL )
-	List:SetSpaceY( 5 )
-	List:SetSpaceX( 5 )
+		local searchBar = vgui.Create( "DFancyTextEntry", Options, 'searchBar')
+		searchBar:Dock( TOP )
+		searchBar:SetFont( "DermaRobotoDefault" )
+		searchBar:SetPlaceholderText( "searchbar_placeholer" )
+		searchBar:SetText(searchQuery or "")
+		searchBar:DockMargin( 0, 0, 0, 10 )
+		searchBar:SetUpdateOnType( true )
+		searchBar.OnValueChange = function() 
+			searchQuery = searchBar:GetText():lower()
+			if( searchQuery == "" ) then searchQuery = nil end
+			self:UpdateList()
+		end
+		self.searchBar = searchBar
+	end
+	local List = self.List
+	List:Clear()
 
 	local f = nil
 	if ( self.Type == "saves" ) then
@@ -33,6 +58,7 @@ function PANEL:UpdateList()
 	end
 
 	for k, v in pairs( f ) do
+		if(searchQuery and not v:lower():find(searchQuery)) then continue end
 		local ListItem = List:Add( "DImageButton" )
 		ListItem:SetSize( 128, 128 )
 		ListItem:SetImage( self.Type .. "/" .. v:StripExtension() .. ".jpg" )
@@ -50,9 +76,6 @@ function PANEL:UpdateList()
 				m:AddOption( "Load", function() RunConsoleCommand( "gm_load", "saves/" .. v ) end )
 			elseif ( self.Type == "demos" ) then
 				m:AddOption( "Play", function() RunConsoleCommand( "playdemo", "demos/" .. v ) end )
-			end
-
-			if ( self.Type == "demos" ) then
 				m:AddOption( "Demo To Video", function() RunConsoleCommand( "gm_demo_to_video", "demos/" .. v ) end )
 			end
 			m:AddOption( "Delete", function()
@@ -72,3 +95,4 @@ function PANEL:Paint( w, h )
 end
 
 vgui.Register( "SavesPanel", PANEL, "EditablePanel" )
+
