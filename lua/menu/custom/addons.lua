@@ -43,9 +43,35 @@ local Addon_Object = {
 			return
 		end
 		if ( mousecode ~= MOUSE_RIGHT ) then 
+
 			if(input.IsShiftDown()) then
-				self:SetSelected(!self:GetSelected())
+				local start_of_enabled = -1
+				local diff = 10000
+				local self_id = 0
+				local addonList = PANEL.AddonList:GetChildren()
+				for id, pnl in ipairs( addonList ) do
+					if(pnl ~= self) then continue end
+					self_id = id
+					break
+				end
+				for id, pnl in ipairs( addonList ) do
+					if not (pnl.GetSelected and pnl:GetSelected() and diff > math.abs(id-self_id)) then
+						continue
+					end
+					start_of_enabled = id
+					diff = math.abs(id-self_id)
+				end
+				if(start_of_enabled ~= -1 and diff ~= 10000) then
+					local _start,_end = math.min(start_of_enabled,self_id), math.max(start_of_enabled,self_id)
+					for i=_start,_end do
+						addonList[i]:SetSelected(true)
+					end
+					return
+				end
 			end
+
+			self:SetSelected(!self:GetSelected())
+			
 			return
 		end
 
@@ -419,6 +445,7 @@ function PANEL:Init()
 	AddonList:DockMargin(5, 5, 5, 5)
 	AddonList:DockPadding(5, 5, 5, 10)
 
+	PANEL.AddonList = AddonList
 	self.AddonList = AddonList
 	self:RefreshAddons()
 
