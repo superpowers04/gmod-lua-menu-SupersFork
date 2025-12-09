@@ -10,173 +10,163 @@ surface.CreateFont( "rb655_AddonDesc", {
 } )
 
 
+gDataTable = gDataTable or {}
 
 
 local PANEL = {
 	anyAddonChanged=false,
 }
+local searchQuery = nil
 local BackgroundColor = Color( 200, 200, 200, 128 )
 local BackgroundColor2 = Color( 200, 200, 200, 255 ) --Color( 0, 0, 0, 100 )
-local searchQuery = nil
-local addon_obj = {}
-
-
-function addon_obj:Init()
-	self:SetTall( 200 )
-	self:SetWide( 200 )
-
-	self.Selected = false
-
-	local DermaCheckbox = vgui.Create( "DCheckBox", self )
-	DermaCheckbox:SetPos( 10, 10 )
-	DermaCheckbox:SetValue( 0 )
-	self.DermaCheckbox = DermaCheckbox
-
-end
-
-function addon_obj:OnMouseReleased( mousecode )
-	if ( mousecode == MOUSE_MIDDLE ) then 
-		steamworks.SetShouldMountAddon( self.Addon.wsid, !steamworks.ShouldMountAddon(self.Addon.wsid) )
-		PANEL.anyAddonChanged = true
-		return
-	elseif ( mousecode ~= MOUSE_RIGHT ) then 
-		if(input.IsShiftDown()) then
-			self:SetSelected(!self:GetSelected())
-		end
-		return
-	end
-
-	local m = DermaMenu()
-
-	if ( !self.panel.ToggleMounted:GetDisabled() ) then
-		m:AddOption( "Invert Selection", function() self.panel:InvertSelection() end )
-		m:AddSpacer()
-	end
-	if ( self.Addon ) then
-		m:AddOption( "Open Workshop Page", function() 
-			self.queuedAction = function(self) 
-				steamworks.ViewFile( self.Addon.wsid )
-			end
-		end)
-		m:AddSpacer()
-		local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
-		m:AddOption( should_mount_addon and "Disable" or "Enable", function() 
-			self.queuedAction = function(self) 
-				steamworks.SetShouldMountAddon( self.Addon.wsid, !should_mount_addon )
-				PANEL.anyAddonChanged = true
-			end
-		end)
-		m:AddOption( "Uninstall", function() 
-			self.queuedAction = function(self) 
-				steamworks.Unsubscribe( self.Addon.wsid )
-				PANEL.anyAddonChanged = true
-			end 
-		end) -- Do we need ApplyAddons here?
-	end
-	m:AddSpacer()
-	m:AddOption( "Cancel", function() end )
-	m:Open()
-
-end
-
-function addon_obj:Toggle()
-end
-
-function addon_obj:SetSelected( b )
-	self.DermaCheckbox:SetChecked( b )
-end
-
-function addon_obj:GetSelected()
-	return self.DermaCheckbox:GetChecked()
-end
-
-gDataTable = gDataTable or {}
-function addon_obj:SetAddon( data )
-	self.Addon = data
-	if ( gDataTable[ data.wsid ] ) then self.AdditionalData = gDataTable[ data.wsid ] return end
-
-	steamworks.FileInfo( data.wsid, function( result )
-		gDataTable[ data.wsid ] = result
-
-		if ( !file.Exists( "cache/workshop/" .. result.previewid .. ".cache", "MOD" ) ) then
-			steamworks.Download( result.previewid, false, function( name ) end )
-		end
-
-		if ( !IsValid( self ) ) then return end
-
-		self.panel:RefreshAddons()
-		self.AdditionalData = result
-
-	end )
-end
-
-local missingMat = Material( "../html/img/addonpreview.png", "nocull smooth" )
+local missingMat = Material("../html/img/addonpreview.png", "nocull smooth")
 local lastBuild = 0
 local imageCache = {}
-local selectedColor, enabledColor, disabledColor = Color( 0, 150, 255, 255 ), Color( 160, 255, 160, 255 ), Color( 100, 100, 100, 255 )
+local selectedColor, enabledColor, disabledColor = Color(0, 150, 255, 255), Color(160, 255, 160, 255), Color(100, 100, 100, 255)
 
--- local byteSizes = {"b","kb",'mb','gb','tb'}
--- local function toFriendlySize(s)
--- 	local i = 1
--- 	while s/1024>0 do
--- 		i=i+1
--- 		s = s/1024
--- 	end
--- 	return s .. byteSizes
--- end
-function addon_obj:Paint( w, h )
 
-	if ( IsValid( self.DermaCheckbox ) ) then
-		self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
-	end
+local Addon_Object = {
+	Init = function(self)
+		self:SetTall( 200 )
+		self:SetWide( 200 )
 
-	if ( self.AdditionalData and imageCache[ self.AdditionalData.previewid ] ) then
-		self.Image = imageCache[ self.AdditionalData.previewid ]
-	end
+		self.Selected = false
 
-	if ( !self.Image and self.AdditionalData and file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) and CurTime() - lastBuild > 0.1 ) then
-		self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
-		imageCache[ self.AdditionalData.previewid ] = self.Image
-		lastBuild = CurTime()
-	end
-
-	if ( self:GetSelected() ) then
-		draw.RoundedBox( 4, 0, 0, w, h, selectedColor )
-	end
-	if ( self.Addon and steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
-		draw.RoundedBox( 4, 2, 2, w-4, h-4, enabledColor )
-	else
-		draw.RoundedBox( 4, 2, 2, w-4, h-4, disabledColor )
-	end
-
-	surface.SetMaterial( self.Image or missingMat)
-	local tall,wide = self:GetTall(),self:GetWide()
-	local imageSize = self:GetTall() - 10
-	surface.SetDrawColor( color_white )
-	surface.DrawTexturedRect( 5, 5, imageSize, imageSize )
-	if not self.Addon then return end
-
-	--[[if ( self.Addon and !steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
-		draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 180 ) )
-	end]]
-
-	if ( self.Hovered ) then
-		draw.RoundedBox( 0, 5, h - 20, w - 10, 15, Color( 0, 0, 0, 180 ) )
-		local title = self.Addon.title
-		local tw = surface.GetTextSize( title )
-		local offset = 0
-		if ( tw > w ) then
-			offset=( ( w - tw ) * math.sin( CurTime() ) )
+		local DermaCheckbox = vgui.Create( "DCheckBox", self )
+		DermaCheckbox:SetPos( 10, 10 )
+		DermaCheckbox:SetValue( 0 )
+		self.DermaCheckbox = DermaCheckbox
+	end,
+	OnMouseReleased = function (self, mousecode)
+		if ( mousecode == MOUSE_MIDDLE ) then 
+			self:SetAddonState(!self:GetAddonState())
+			return
 		end
-		draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 24, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
-	end
-	if( self.queuedAction and not self:queuedAction()) then
-		self.queuedAction=nil
+		if ( mousecode ~= MOUSE_RIGHT ) then 
+			if(input.IsShiftDown()) then
+				self:SetSelected(!self:GetSelected())
+			end
+			return
+		end
+
+		local m = DermaMenu()
+
+		if ( !self.panel.ToggleMounted:GetDisabled() ) then
+			m:AddOption( "Invert Selection", function() self.panel:InvertSelection() end )
+			m:AddSpacer()
+		end
+		if ( self.Addon ) then
+			m:AddOption( "Open Workshop Page", function() 
+				self.queuedAction = function(self) 
+					steamworks.ViewFile( self.Addon.wsid )
+				end
+			end)
+			m:AddSpacer()
+			local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
+			if(should_mount_addon) then
+				m:AddOption("Disable", function() self.queuedAction = self.DisableAddon end)
+			else
+				m:AddOption("Enable", function() self.queuedAction = self.EnableAddon end)
+			end
+			m:AddOption( "Uninstall", function() self.queuedAction = self.UninstallAddon end) 
+		end
+		m:AddSpacer()
+		m:AddOption( "Cancel", function() end )
+		m:Open()
+	end,
+
+	SetAddonState = function(self, state)
+		steamworks.SetShouldMountAddon( self.Addon.wsid, state )
+		PANEL.anyAddonChanged = true
+	end,
+	GetAddonState = function(self) return steamworks.ShouldMountAddon(self.Addon.wsid) end,
+	EnableAddon = function(self) self:SetAddonState(true) end,
+	DisableAddon = function(self) self:SetAddonState(false) end,
+	UninstallAddon = function(self)
+		steamworks.Unsubscribe( self.Addon.wsid )
+		PANEL.anyAddonChanged = true
+	end, -- Do we need ApplyAddons here?
+
+	toggle = function(self) return end,
+	SetSelected = function(self, b) self.DermaCheckbox:SetChecked( b ) end,
+	GetSelected = function(self) return self.DermaCheckbox:GetChecked() end,
+
+
+	SetAddon = function(self, data)
+		self.Addon = data
+		if ( gDataTable[ data.wsid ] ) then 
+			self.AdditionalData = gDataTable[ data.wsid ]
+			return
+		end
+
+		steamworks.FileInfo( data.wsid, function( result )
+			gDataTable[ data.wsid ] = result
+
+			if ( !file.Exists( "cache/workshop/" .. result.previewid .. ".cache", "MOD" ) ) then
+				steamworks.Download( result.previewid, false, function( name ) end )
+			end
+			if ( !IsValid(self) ) then return end
+
+
+			self.panel:RefreshAddons()
+			self.AdditionalData = result
+
+		end )
+	end,
+	Paint = function(self, w, h )
+		if ( IsValid( self.DermaCheckbox ) ) then
+			self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
+		end
+
+		if ( self.AdditionalData and imageCache[ self.AdditionalData.previewid ] ) then
+			self.Image = imageCache[ self.AdditionalData.previewid ]
+		end
+
+		if ( !self.Image and self.AdditionalData and file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) and CurTime() - lastBuild > 0.1 ) then
+			self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
+			imageCache[ self.AdditionalData.previewid ] = self.Image
+			lastBuild = CurTime()
+		end
+
+		if ( self:GetSelected() ) then
+			draw.RoundedBox( 4, 0, 0, w, h, selectedColor )
+		end
+		if ( self.Addon and steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
+			draw.RoundedBox( 4, 2, 2, w-4, h-4, enabledColor )
+		else
+			draw.RoundedBox( 4, 2, 2, w-4, h-4, disabledColor )
+		end
+
+		surface.SetMaterial( self.Image or missingMat)
+		local tall,wide = self:GetTall(),self:GetWide()
+		local imageSize = tall - 10
+		surface.SetDrawColor( color_white )
+		surface.DrawTexturedRect( 5, 5, imageSize, imageSize )
+		if not self.Addon then return end
+
+		--[[if ( self.Addon and !steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
+			draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 180 ) )
+		end]]
+
+		if ( self.Hovered ) then
+			draw.RoundedBox( 0, 5, h - 20, w - 10, 15, Color( 0, 0, 0, 180 ) )
+			local title = self.Addon.title
+			local tw = surface.GetTextSize( title )
+			local offset = 0
+			if ( tw > w ) then
+				offset=( ( w - tw ) * math.sin( CurTime() ) )
+			end
+			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 24, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+		end
+		if( self.queuedAction and not self:queuedAction()) then
+			self.queuedAction=nil
+		end
+
 	end
 
-end
+}
 
-vgui.Register( "MenuAddon", addon_obj, "Panel" )
+vgui.Register( "MenuAddon", Addon_Object, "Panel" )
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -323,64 +313,68 @@ function PANEL:Init()
 	--[[ ------------------------------------------------------------------------- ]]
 
 	local Groups = vgui.Create( "DComboBox", Categories )
+	self.Groups = Groups
 	Groups:Dock( TOP )
 	Groups:SetTall( 30 )
 	Groups:DockMargin( 0, 0, 0, 5 )
-	for id, group in pairs( Grouping ) do Groups:AddChoice( "Group by: " .. group.label, id, !Groups:GetSelectedID() ) end
+	for id, group in pairs( Grouping ) do 
+		Groups:AddChoice( "Group by: " .. group.label, id, !Groups:GetSelectedID() )
+	end
 	Groups.OnSelect = function( index, value, data ) self:RefreshAddons() end
-	self.Groups = Groups
 
 	local Filters = vgui.Create( "DComboBox", Categories )
+	self.Filters = Filters
 	Filters:Dock( TOP )
 	Filters:SetTall( 30 )
 	Filters:DockMargin( 0, 0, 0, 40 )
-	for id, f in pairs( AddonFilters ) do Filters:AddChoice( "Filter by: " .. f.label, id, !Filters:GetSelectedID() ) end
+	for id, f in pairs( AddonFilters ) do 
+		Filters:AddChoice( "Filter by: " .. f.label, id, !Filters:GetSelectedID() )
+	end
 	Filters.OnSelect = function( index, value, data ) self:RefreshAddons() end
-	self.Filters = Filters
 
 	--[[ ------------------------------------------------------------------------- ]]
 
 	local ToggleMounted = vgui.Create( "DButton", Categories )
+	self.ToggleMounted = ToggleMounted
 	ToggleMounted:Dock( TOP )
 	ToggleMounted:SetText( "#Toggle Selected" )
 	ToggleMounted:SetTall( 30 )
 	ToggleMounted:DockMargin( 0, 0, 0, 5 )
 	ToggleMounted.DoClick = function() self:ToggleSelected() end
-	self.ToggleMounted = ToggleMounted
 
 	local EnableSelection = vgui.Create( "DButton", Categories )
+	self.EnableSelection = EnableSelection
 	EnableSelection:Dock( TOP )
 	EnableSelection:SetText( "#Enable Selected" )
 	EnableSelection:SetTall( 30 )
 	EnableSelection:DockMargin( 0, 0, 0, 5 )
 	EnableSelection.DoClick = function() self:EnableSelected() end
-	self.EnableSelection = EnableSelection
 
 	local DisableSelection = vgui.Create( "DButton", Categories )
+	self.DisableSelection = DisableSelection
 	DisableSelection:Dock( TOP )
 	DisableSelection:SetText( "#Disable Selected" )
 	DisableSelection:SetTall( 30 )
 	DisableSelection:DockMargin( 0, 0, 0, 5 )
 	DisableSelection.DoClick = function() self:DisableSelected() end
-	self.DisableSelection = DisableSelection
 
 	--[[ ------------------------------------------------------------------------- ]]
 
 	local SelectAll = vgui.Create( "DButton", Categories )
+	self.SelectAllButton = SelectAll
 	SelectAll:Dock( TOP )
 	SelectAll:SetText( "#Select All" )
 	SelectAll:SetTall( 16 )
 	SelectAll:DockMargin( 0, 0, 0, 5 )
 	SelectAll.DoClick = function() self:SelectAll() end
-	self.SelectAllButton = SelectAll
 
 	local DeselectAll = vgui.Create( "DButton", Categories )
+	self.DeselectAllButton = DeselectAll
 	DeselectAll:Dock( TOP )
 	DeselectAll:SetText( "#Deselect All" )
 	DeselectAll:SetTall( 16 )
 	DeselectAll:DockMargin( 0, 0, 0, 5 )
 	DeselectAll.DoClick = function() self:DeselectAll() end
-	self.DeselectAllButton = DeselectAll
 
 	local InvertAll = vgui.Create( "DButton", Categories )
 	InvertAll:Dock( TOP )
@@ -396,14 +390,17 @@ function PANEL:Init()
 	OpenWorkshop:SetText( "#Open Workshop" )
 	OpenWorkshop:SetTall( 30 )
 	OpenWorkshop:DockMargin( 0, 40, 0, 0 )
-	OpenWorkshop.DoClick = function() steamworks.OpenWorkshop() end
+	OpenWorkshop.DoClick = steamworks.OpenWorkshop
 
 	local OpenWorkshop = vgui.Create( "DButton", Categories )
 	OpenWorkshop:Dock( TOP )
 	OpenWorkshop:SetText( "#Apply Addon Changes" )
 	OpenWorkshop:SetTall( 30 )
 	OpenWorkshop:DockMargin( 0, 5, 0, 0 )
-	OpenWorkshop.DoClick = function() PANEL.anyAddonChanged = false; steamworks.ApplyAddons() end
+	OpenWorkshop.DoClick = function() 
+		PANEL.anyAddonChanged = false
+		steamworks.ApplyAddons()
+	end
 
 	------------------- Addon List
 
@@ -416,11 +413,11 @@ function PANEL:Init()
 	end
 
 	local AddonList = vgui.Create( "DIconLayout", Scroll )
-	AddonList:SetSpaceX( 5 )
-	AddonList:SetSpaceY( 5 )
-	AddonList:Dock( FILL )
-	AddonList:DockMargin( 5, 5, 5, 5 )
-	AddonList:DockPadding( 5, 5, 5, 10 )
+	AddonList:SetSpaceX(5)
+	AddonList:SetSpaceY(5)
+	AddonList:Dock(FILL)
+	AddonList:DockMargin(5, 5, 5, 5)
+	AddonList:DockPadding(5, 5, 5, 10)
 
 	self.AddonList = AddonList
 	self:RefreshAddons()
@@ -434,14 +431,14 @@ function PANEL:Think()
 	local onlyEnabled = true
 	local onlyDisabled = true
 	for id, pnl in pairs( self.AddonList:GetChildren() ) do
-		if ( pnl.GetSelected and pnl:GetSelected() ) then 
-			if( pnl:GetSelected() ) then
+		if pnl.GetSelected then 
+			if pnl:GetSelected() then
 				anySelected = true
 			else
 				allSelected = false
 			end
-
 		end
+
 		if ( pnl.Addon ) then
 			if(steamworks.ShouldMountAddon( pnl.Addon.wsid )) then
 				onlyDisabled = false
@@ -449,7 +446,7 @@ function PANEL:Think()
 				onlyEnabled = false
 			end
 		end
-		if(anySelected && not onlyDisabled && not onlyEnabled) then
+		if(anySelected and not onlyDisabled and not onlyEnabled) then
 			break
 		end
 	end
@@ -536,7 +533,10 @@ function PANEL:RefreshAddons()
 
 		local addns = {}
 		for k, mod in pairs( group.addons ) do
-			if ( (searchQuery && mod.title && !mod.title:lower():find( searchQuery ) ) || !AddonFilters[ filter ].func( mod ) ) then continue end
+			if ( (searchQuery and mod.title and not mod.title:lower():find(searchQuery) )
+				or not AddonFilters[filter].func(mod) ) then 
+				continue
+			end
 			table.insert( addns, mod )
 		end
 

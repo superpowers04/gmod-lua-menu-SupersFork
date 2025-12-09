@@ -59,11 +59,6 @@ function PANEL:Init()
 
 	self.Scroll = Scroll
 
-	local List = vgui.Create( "DListLayout", Scroll )
-	List:Dock( FILL )
-	-- List:SetSpaceY( 5 )
-	-- List:SetSpaceX( 5 )
-	self.List = List
 
 	self:RegenerateList()
 
@@ -83,14 +78,17 @@ function PANEL:savePack(path)
 	print('Saved to ' .. "addon_packs_smmenu/" .. path)
 	self:RegenerateList()
 end
-function PANEL:selectPack(path)
+function PANEL:selectPack(path, state, only)
 	local contents = file.Read("addon_packs_smmenu/" .. path,'DATA')
+	local state = (state == nil and true) or (state and true or false)
 
-	for _, addon in pairs( engine.GetAddons() ) do
-		steamworks.SetShouldMountAddon( addon.wsid, false )
+	if(only) then
+		for _, addon in pairs( engine.GetAddons() ) do
+			steamworks.SetShouldMountAddon( addon.wsid, false )
+		end
 	end
 	for id in contents:gmatch('\n([^ ]+)') do
-		steamworks.SetShouldMountAddon( id, true)
+		steamworks.SetShouldMountAddon( id, state)
 	end
 	steamworks.ApplyAddons() 
 	self:GetParent():OpenAddonPacksMenu()
@@ -99,7 +97,13 @@ end
 function PANEL:RegenerateList()
 
 	local List = self.List
-	List:Clear()
+	if(self.list) then
+		List:Clear()
+		List:Remove()
+	end
+	List = vgui.Create( "DListLayout", self.Scroll, "packlist")
+	List:Dock( FILL )
+	self.List = List
 
 	local f = file.Find( "addon_packs_smmenu/*.txt", "DATA", "datedesc" )
 
@@ -129,9 +133,15 @@ function PANEL:RegenerateList()
 			local m = DermaMenu()
 
 			
-			m:AddOption( "Select", function()
-				self:selectPack(v)
-			end )
+			m:AddOption("Enable only pack", function()
+				self:selectPack(v, true, true)
+			end)
+			m:AddOption("Enable pack", function()
+				self:selectPack(v, true, false)
+			end)
+			m:AddOption("Disable pack", function()
+				self:selectPack(v, false)
+			end)
 			m:AddSpacer()
 			m:AddSpacer()
 			m:AddOption( "Delete", function()
@@ -145,7 +155,6 @@ function PANEL:RegenerateList()
 			m:Open()
 		end
 		ListItem.DoClick = ListItem.DoRightClick
-
 	end
 end
 

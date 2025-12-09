@@ -38,7 +38,10 @@ end
 
 function PANEL:Paint()
 	if ( self.Disabled == true ) then self:SetFGColor( Color( 120, 120, 120 ) ) return end
-	self:SetFGColor( self.Hovered and Color( 255, 255, 128 ) or Color( 255, 255, 255 ) )
+	self:SetFGColor(self.Disabled and Color( 120, 120, 120 ) or 
+					self.Hovered and Color( 255, 255, 128 ) or 
+					Color( 255, 255, 255 )
+				)
 end
 
 function PANEL:OnCursorEntered()
@@ -107,7 +110,7 @@ function PANEL:Init()
 	local AddonPacks = vgui.Create( "MenuButton", mainButtons )
 	AddonPacks:Dock( TOP )
 	AddonPacks:DockMargin( 5, 20, 5, 0 )
-	AddonPacks:SetText( "Addon Packs(UNFINISHED!)" )
+	AddonPacks:SetText( "Addon Packs(WIP)" )
 	AddonPacks.DoClick = function()
 		self:GetParent():OpenAddonPacksMenu()
 	end
@@ -182,16 +185,11 @@ function PANEL:Paint()
 	end
 
 	if ( self.IsInGame != IsInGame() ) then
-
 		self.IsInGame = IsInGame()
+		
+		self.Disconnect:SetVisible(self.IsInGame)
+		self.Resume:SetVisible(self.IsInGame)
 
-		if ( self.IsInGame ) then
-			self.Disconnect:SetVisible( true )
-			self.Resume:SetVisible( true )
-		else
-			self.Disconnect:SetVisible( false )
-			self.Resume:SetVisible( false )
-		end
 
 	end
 

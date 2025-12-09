@@ -158,19 +158,13 @@ function PANEL:Init()
 end
 
 function PANEL:Paint()
-
-
 	self.BackButton:SetVisible( self.currentFrame != self.MainMenuPanel && IsValid( self.currentFrame ) )
 	
 
 	if ( self.IsInGame != IsInGame() ) then
-
 		self.IsInGame = IsInGame()
-
 		self:OpenMainMenu() -- To update the buttons
-
 	end
-
 
 end
 
@@ -188,11 +182,6 @@ function PANEL:CloseAllMenus()
 		end
 		currentFrame:Remove()
 	end
-	-- if ( IsValid( self.MainMenuPanel ) ) then self.MainMenuPanel:Remove() end
-	-- if ( IsValid( self.NewGameFrame ) ) then self.NewGameFrame:Remove() end
-	-- if ( IsValid( self.AddonsFrame ) ) then self.AddonsFrame:Remove() end
-	-- if ( IsValid( self.AchievementsFrame ) ) then self.AchievementsFrame:Remove() end
-	-- if ( IsValid( self.SavesFrame ) ) then self.SavesFrame:Remove() end
 end
 
 function PANEL:Back()
