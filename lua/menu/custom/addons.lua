@@ -131,12 +131,13 @@ local Addon_Object = {
 			if ( !file.Exists( "cache/workshop/" .. result.previewid .. ".cache", "MOD" ) ) then
 				steamworks.Download( result.previewid, false, function( name ) end )
 			end
+
 			if ( !IsValid(self) ) then return end
 
 
 			self.panel:RefreshAddons()
 			self.AdditionalData = result
-
+			self:SetTooltip(self.Addon.title)
 		end )
 	end,
 	Paint = function(self, w, h )
@@ -428,6 +429,16 @@ function PANEL:Init()
 		steamworks.ApplyAddons()
 	end
 
+	local delyeet = vgui.Create( "DButton", Categories )
+	delyeet:Dock( TOP )
+	delyeet:SetText( "#Uninstall Selected" )
+	delyeet:SetTall( 30 )
+	delyeet:DockMargin( 0, 40, 0, 0 )
+	delyeet.DoClick = function() 
+		self:UninstallSelected()
+	end
+	self.UninstallSelectedButton = delyeet
+
 	------------------- Addon List
 
 	local Scroll = vgui.Create( "DScrollPanel", self )
@@ -477,12 +488,14 @@ function PANEL:Think()
 			break
 		end
 	end
-	self.ToggleMounted:SetDisabled( !anySelected )
-	self.EnableSelection:SetDisabled( !anySelected or onlyEnabled )
-	self.DisableSelection:SetDisabled( !anySelected or onlyDisabled )
+	local noneSelected = !anySelected
+	self.ToggleMounted:SetDisabled( noneSelected )
+	self.EnableSelection:SetDisabled( noneSelected or onlyEnabled )
+	self.DisableSelection:SetDisabled( noneSelected or onlyDisabled )
 
 	self.SelectAllButton:SetDisabled( allSelected )
-	self.DeselectAllButton:SetDisabled( !anySelected )
+	self.DeselectAllButton:SetDisabled( noneSelected )
+	self.UninstallSelectedButton:SetDisabled( noneSelected )
 end
 
 function PANEL:ToggleSelected()
@@ -532,6 +545,15 @@ function PANEL:SelectAll()
 	end
 end
 
+
+function PANEL:UninstallSelected()
+	for id, pnl in pairs( self.AddonList:GetChildren() ) do
+		if ( !pnl.GetSelected or !pnl:GetSelected() ) then continue end
+		pnl:UninstallAddon()
+	end
+	PANEL.anyAddonChanged = true
+end
+
 function PANEL:Update()
 	self:RefreshAddons()
 end
@@ -539,9 +561,28 @@ end
 function PANEL:OnRemove()
 	self:TryAddonReload()
 end
+function PANEL.CheckAddonDependants(addon)
+	for i,v in pairs(addon.children) do
+		if not engine.ShouldMountAddon(v) then
+			print(('[Warn] %s depends on %s but it isn\'t enabled!'):format(addon.wsid,tostring(v)))
+		end
+	end
+end
 function PANEL:TryAddonReload()
 	if(!PANEL.anyAddonChanged) then return end
 	steamworks.ApplyAddons() 
+	for id,v in pairs(engine.GetAddons()) do
+		if ( gDataTable[ data.wsid ] ) then 
+			self.AdditionalData = gDataTable[ data.wsid ]
+			PANEL.CheckAddonDependants(data)
+			return
+		end
+
+		steamworks.FileInfo( data.wsid, function( result )
+			gDataTable[ data.wsid ] = result
+			PANEL.CheckAddonDependants(result)
+		end )
+	end
 	PANEL.anyAddonChanged = false
 end
 
