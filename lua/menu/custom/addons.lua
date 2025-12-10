@@ -571,18 +571,6 @@ end
 function PANEL:TryAddonReload()
 	if(!PANEL.anyAddonChanged) then return end
 	steamworks.ApplyAddons() 
-	for id,v in pairs(engine.GetAddons()) do
-		if ( gDataTable[ data.wsid ] ) then 
-			self.AdditionalData = gDataTable[ data.wsid ]
-			PANEL.CheckAddonDependants(data)
-			return
-		end
-
-		steamworks.FileInfo( data.wsid, function( result )
-			gDataTable[ data.wsid ] = result
-			PANEL.CheckAddonDependants(result)
-		end )
-	end
 	PANEL.anyAddonChanged = false
 end
 

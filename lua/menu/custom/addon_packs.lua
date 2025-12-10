@@ -78,13 +78,18 @@ function PANEL:savePack(path)
 	print('Saved to ' .. "addon_packs_smmenu/" .. path)
 	self:RegenerateList()
 end
-function PANEL:selectPack(path, state, only)
+function PANEL:selectPack(path, state, only, subscribe)
 	local contents = file.Read("addon_packs_smmenu/" .. path,'DATA')
 	local state = (state == nil and true) or (state and true or false)
 
 	if(only) then
 		for _, addon in pairs( engine.GetAddons() ) do
 			steamworks.SetShouldMountAddon( addon.wsid, false )
+		end
+	end
+	if(subscribe) then
+		for id in contents:gmatch('\n([^ ]+)') do
+			steamworks.Subscribe(id)
 		end
 	end
 	for id in contents:gmatch('\n([^ ]+)') do
@@ -107,7 +112,7 @@ function PANEL:RegenerateList()
 
 	local f = file.Find( "addon_packs_smmenu/*.txt", "DATA", "datedesc" )
 
-	if(table.Count(f) < 1) then
+	if(table.Count(f) == 0) then
 
 		local ErrorButton = vgui.Create( "DButton" , List ) -- This is honestly stupid but other issues are more important
 		ErrorButton:Dock( TOP )
@@ -143,6 +148,9 @@ function PANEL:RegenerateList()
 				self:selectPack(v, false)
 			end)
 			m:AddSpacer()
+			m:AddOption("Subscribe+Enable pack", function()
+				self:selectPack(v, true, false, true)
+			end)
 			m:AddSpacer()
 			m:AddOption( "Delete", function()
 				file.Delete( "addon_packs_smmenu/" .. v, "DATA" )
