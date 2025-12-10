@@ -120,6 +120,7 @@ local Addon_Object = {
 
 	SetAddon = function(self, data)
 		self.Addon = data
+		self:SetTooltip(self.Addon.title)
 		if ( gDataTable[ data.wsid ] ) then 
 			self.AdditionalData = gDataTable[ data.wsid ]
 			return
@@ -137,7 +138,6 @@ local Addon_Object = {
 
 			self.panel:RefreshAddons()
 			self.AdditionalData = result
-			self:SetTooltip(self.Addon.title)
 		end )
 	end,
 	Paint = function(self, w, h )
