@@ -79,7 +79,7 @@ local Addon_Object = {
 				local dependsOn = {}
 				for i,id in ipairs(data.children) do
 					local id = tostring(id)
-					dependsOn[#dependsOn+1] = gDataTable[id] and gDataTable[id].title or v .. '(N/A)'
+					dependsOn[#dependsOn+1] = gDataTable[id] and gDataTable[id].title or id .. '(N/A)'
 				end
 				text[#text+1] = "\nRequires: " .. table.concat( dependsOn, ", ")
 			end
