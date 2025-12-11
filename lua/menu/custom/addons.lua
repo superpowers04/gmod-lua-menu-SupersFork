@@ -17,13 +17,24 @@ local PANEL = {
 	anyAddonChanged=false,
 }
 local searchQuery = nil
-local FGColor = Color( 250, 240, 250, 256 )
+local FGColor = Color( 256, 256, 256, 256 )
 local BackgroundColor = Color( 200, 200, 200, 128 )
 local BackgroundColor2 = Color( 200, 200, 200, 255 ) --Color( 0, 0, 0, 100 )
+local BackgroundColor3 = Color( 130, 130, 130, 255 ) --Color( 0, 0, 0, 100 )
 local missingMat = Material("../html/img/addonpreview.png", "nocull smooth")
 local lastBuild = 0
 local imageCache = {}
 local selectedColor, enabledColor, disabledColor = Color(0, 150, 255, 255), Color(160, 255, 160, 255), Color(100, 100, 100, 255)
+
+local function fileSize(n)
+	local i = 1
+	while n > 1024 do
+		n = n/1024
+		i=i+1
+	end
+	return ('%.2f '):format(n) .. ({"B",'KB',"MB",'GB','TB','PB','???'})[i]
+end
+
 
 
 local Addon_Object = {
@@ -41,8 +52,8 @@ local Addon_Object = {
 	
 	updateModStuffs = function(self)
 		PANEL.modImage:SetMaterial(self.Image or missingMat)
-		PANEL.modText:SetBGColor(BackgroundColor)
-		PANEL.modText:SetFGColor(Color(256,256,256,256))
+		PANEL.modText:SetBGColor(BackgroundColor3)
+		PANEL.modText:SetFGColor(FGColor)
 		local text = {self.Addon.title,''}
 		if(self.AdditionalData) then
 			local data = self.AdditionalData
@@ -54,6 +65,11 @@ local Addon_Object = {
 				end
 				text[#text+1] = "\n\nDepends on: " .. table.concat( dependsOn, ", ")
 			end
+			text[#text+1] = "Size: " .. fileSize(data.size)
+			text[#text+1] = ("Score: %.2f"):format(data.score)
+			text[#text+1] = ("Upvotes/Downvotes: %i/%i"):format(data.up,data.down)
+			text[#text+1] = "Content Descriptors: " .. table.concat( data.content_descriptors, ", ")
+
 		end
 
 		PANEL.modText:SetText(table.concat(text,'\n'))
@@ -359,6 +375,7 @@ function PANEL:Init()
 	Categories:DockPadding( 5, 5, 5, 5 )
 	Categories:Dock( RIGHT )
 	Categories:SetWide( 350 )
+	Categories:SetBGColor(BackgroundColor)
 
 
 	--[[ ------------------------------------------------------------------------- ]]
