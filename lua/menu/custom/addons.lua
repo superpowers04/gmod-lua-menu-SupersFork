@@ -92,6 +92,14 @@ local Addon_Object = {
 					return
 				end
 			end
+			if(!input.IsControlDown() and !self.DermaCheckbox:IsHovered()) then
+				for index,addon in pairs(PANEL.AddonList:GetChildren()) do
+					if(addon.GetSelected and addon:GetSelected()) then
+						addon:SetSelected(false)
+					end
+				end
+				self:updateModStuffs()
+			end
 
 			self:SetSelected(!self:GetSelected())
 			self:updateModStuffs()
