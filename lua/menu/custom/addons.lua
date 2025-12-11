@@ -86,7 +86,7 @@ local Addon_Object = {
 			if(data.dependants) then
 				local dependants = {}
 				for id in pairs(data.dependants) do
-					dependants[#dependants+1] = gDataTable[id] and gDataTable[id].title or v .. '(N/A)'
+					dependants[#dependants+1] = gDataTable[id] and gDataTable[id].title or id .. '(N/A)'
 				end
 				if(#dependants > 0) then
 					text[#text+1] = "\nRequired by: " .. table.concat( dependants, ", ")
