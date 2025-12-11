@@ -165,6 +165,20 @@ local Addon_Object = {
 			else
 				m:AddOption("Enable", function() self.queuedAction = self.EnableAddon end)
 			end
+			if(self.AdditionalData and self.AdditionalData.dependants) then
+				for _ in pairs(self.AdditionalData.dependants) do
+					m:AddOption("Select all dependants", function()
+						self:SetSelected(true)
+						for id in pairs(self.AdditionalData.dependants) do
+							if(gDataTable[id] and gDataTable[id].panel_object) then
+								gDataTable[id].panel_object:SetSelected(true)
+							end
+						end
+					end)
+					break
+				end
+			end
+
 			m:AddOption( "Uninstall", function() self.queuedAction = self.UninstallAddon end) 
 		end
 		m:AddSpacer()
@@ -197,6 +211,7 @@ local Addon_Object = {
 	UpdateData = function(self, data)
 		self.AdditionalData = data
 		self:SetTooltip(data.title)
+		data.panel_object = self
 		if(not self.Addon.wsid or not data.children) then return end
 		for i,v in pairs(data.children) do
 			getDataFromID(v).dependants[self.Addon.wsid] = true
@@ -205,19 +220,20 @@ local Addon_Object = {
 	SetAddon = function(self, data)
 		self.Addon = data
 		self:SetTooltip(self.Addon.title)
-		if ( gDataTable[ data.wsid ] ) then 
-			self:UpdateData(gDataTable[data.wsid])
+		local datatable = gDataTable[data.wsid]
+		if ( datatable ) then 
+			self:UpdateData(datatable)
 			return
 		end
 		if data.wsid then
 			getDataFromID(data.wsid)
 		end
 
-		steamworks.FileInfo( data.wsid, function( result )
+		steamworks.FileInfo( data.wsid, function( _result )
 			-- gDataTable[ data.wsid ] = result
-			local tbl = gDataTable[ data.wsid ]
-			for i,v in pairs(result) do
-				tbl[i]=v
+			local result = gDataTable[ data.wsid ]
+			for i,v in pairs(_result) do
+				result[i]=v
 			end
 
 
@@ -567,12 +583,12 @@ function PANEL:Init()
 	OpenWorkshop:DockMargin( 0, 20, 0, 0 )
 	OpenWorkshop.DoClick = steamworks.OpenWorkshop
 
-	local OpenWorkshop = vgui.Create( "DButton", Categories )
-	OpenWorkshop:Dock( TOP )
-	OpenWorkshop:SetText( "#Apply Addon Changes" )
-	OpenWorkshop:SetTall( 30 )
-	OpenWorkshop:DockMargin( 0, 5, 0, 0 )
-	OpenWorkshop.DoClick = function() 
+	local ApplyAddonChanges = vgui.Create( "DButton", Categories )
+	ApplyAddonChanges:Dock( TOP )
+	ApplyAddonChanges:SetText( "#Apply Addon Changes" )
+	ApplyAddonChanges:SetTall( 30 )
+	ApplyAddonChanges:DockMargin( 0, 5, 0, 0 )
+	ApplyAddonChanges.DoClick = function() 
 		PANEL.anyAddonChanged = false
 		steamworks.ApplyAddons()
 	end
