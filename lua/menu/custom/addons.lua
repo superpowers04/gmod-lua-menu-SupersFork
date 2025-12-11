@@ -235,15 +235,15 @@ local Addon_Object = {
 		if ( IsValid(self.DermaCheckbox) ) then
 			self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
 		end
-
-		if (imageCache[ self.AdditionalData.previewid ]) then
-			self.Image = imageCache[ self.AdditionalData.previewid ]
-		elseif (CurTime() - lastBuild) > 0.1 and file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) then
-			self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
-			imageCache[ self.AdditionalData.previewid ] = self.Image
-			lastBuild = CurTime()
+		if(self.AdditionalData and self.AdditionalData.previewid) then
+			if (imageCache[ self.AdditionalData.previewid ]) then
+				self.Image = imageCache[ self.AdditionalData.previewid ]
+			elseif (CurTime() - lastBuild) > 0.1 and file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) then
+				self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
+				imageCache[ self.AdditionalData.previewid ] = self.Image
+				lastBuild = CurTime()
+			end
 		end
-
 		if ( self:GetSelected() ) then
 			draw.RoundedBox( 4, 0, 0, w, h, selectedColor )
 		end
