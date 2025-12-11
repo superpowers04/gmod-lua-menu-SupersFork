@@ -197,7 +197,7 @@ local Addon_Object = {
 	UpdateData = function(self, data)
 		self.AdditionalData = data
 		self:SetTooltip(data.title)
-		if(not self.Addon.wsid) then return end
+		if(not self.Addon.wsid or not data.children) then return end
 		for i,v in pairs(data.children) do
 			getDataFromID(v).dependants[self.Addon.wsid] = true
 		end

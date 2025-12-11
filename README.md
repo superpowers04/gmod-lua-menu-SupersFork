@@ -1,7 +1,14 @@
 Superpowers04's fork of [Garry's Mod Lua Main Menu](https://github.com/robotboy655/gmod-lua-menu)
 =============
-A fork that fixes some issues, adds a search bar and some QOL changes to [Garry's Mod Lua Main Menu](https://github.com/robotboy655/gmod-lua-menu) by robotboy655
+A fork of [Garry's Mod Lua Main Menu](https://github.com/robotboy655/gmod-lua-menu) by robotboy655
 The ONLY reason why this hasn't been pr'd is because I use a different programming style that doesn't entirely conform to the CONTRIBUTING.md
+
+Main changes
+* Addon list now supports sorting, searching, mass-toggling, and a display on the side showing the last selected addon's icon, description, and other information about it
+* Completely custom addon pack implementation(Addonpacks are text files in `GarrysMod/garrysmod/data/addon_packs_smmenu/` containing `ID NAME` seperated by newlines)
+* Saves, and Demos now have a search bar
+* Hopefully better programming
+
 
 
 Garry's Mod Lua Main Menu

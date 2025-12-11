@@ -1,6 +1,8 @@
 
 ScreenScale = function( size ) return size * ( ScrW() / 640.0 ) end
 
+
+
 include( "getmaps.lua" )
 include( "addons.lua" )
 include( "addon_packs.lua" )
@@ -30,9 +32,8 @@ function PANEL:Paint( w, h )
 		return
 	end
 	self:SetFGColor( color_white )
-	local clr = Color( 0, 134, 204 )
-	if ( self.Hovered ) then clr = Color( 34, 168, 238 ) end
-	if ( self.Depressed ) then clr = Color( 0, 134, 204 ) end
+	local clr = self.Hovered and not self.Depressed and Color( 34, 168, 238 ) 
+		or Color( 0, 134, 204 )
 	--draw.RoundedBox( 4, 0, 0, w, h, clr )
 
 	surface.SetDrawColor( clr )
@@ -53,9 +54,8 @@ function PANEL:Paint( w, h )
 	surface.SetDrawColor( Color( 0, 53, 128 ) )
 	surface.DrawLine( 1, h - 1, w-1, h - 1 ) -- bottom
 
-	local clr2 = Color( 52, 160, 214 )
-	if ( self.Hovered ) then clr2 = Color( 79, 187, 241 ) end
-	if ( self.Depressed ) then clr2 = Color( 52, 160, 214 ) end
+	local clr2 = self.Hovered and not self.Depressed and Color( 79, 187, 241 )
+		or Color( 52, 160, 214 )
 	surface.SetDrawColor( clr2 )
 	surface.DrawLine( 1, 1, w - 1, 1 )
 	
@@ -103,6 +103,8 @@ function PANEL:Init()
 
 
 
+
+
 	local Gamemodes = vgui.Create( "DMenuButton", lowerPanel )
 	Gamemodes:Dock( RIGHT )
 	Gamemodes:DockMargin( 5, 5, 5, 5 )
@@ -138,6 +140,7 @@ function PANEL:Init()
 	end
 	self.Languages = Languages
 
+
 	local Problems = vgui.Create( "DMenuButton", lowerPanel )
 	Problems:Dock( RIGHT )
 	Problems:DockMargin( 5, 5, 0, 5 )
@@ -147,6 +150,24 @@ function PANEL:Init()
 	Problems:SetIcon( "../html/img/error.png" )
 	Problems.DoClick = function() OpenProblemsPanel() end
 	self.ProblemsBtn = Problems
+
+	-- If you're reloading the menu for any reason, you probably want this tbh
+	if(MENU_DEBUG) then 
+		local Reload = vgui.Create( "DMenuButton", lowerPanel )
+		Reload:Dock( RIGHT )
+		Reload:DockMargin( 5, 5, 0, 5 )
+		Reload:SetContentAlignment( 6 )
+		Reload:SetText( "Reload Menu" )
+		Reload:SetWide( 125 )
+		Reload:SetIcon( "../html/img/reload.png" )
+		Reload:SetVisible( MENU_DEBUG and true or false )
+		Reload.DoClick = function()
+			pnlMainMenu:Remove()
+			include( "menu/custom/mainmenu.lua" )
+			pnlMainMenu = vgui.Create( "MainMenuPanel")
+		end
+		self.ReloadBtn = Reload
+	end
 
 
 
@@ -215,7 +236,7 @@ function PANEL:OpenAddonsMenu( b )
 	self.currentFrame = frame
 end
 
-function PANEL:OpenCreationMenu( b, typ )
+function PANEL:OpenSavesMenu( b, typ )
 	self:CloseAllMenus()
 	self:ClosePopups( b )
 
@@ -404,7 +425,6 @@ function PANEL:RefreshAddons()
 	if ( !IsValid( self.AddonsFrame ) ) then return end
 
 	self.AddonsFrame:RefreshAddons()
-
 end
 
 function PANEL:RefreshContent()
@@ -512,6 +532,7 @@ timer.Simple( 0, function()
 	hook.Run( "GameContentChanged" )
 
 	concommand.Add( "reload_mmenu", function( ply, cmd, args, str )
+		MENU_DEBUG = true
 		pnlMainMenu:Remove()
 		include( "menu/custom/mainmenu.lua" )
 		pnlMainMenu = vgui.Create( "MainMenuPanel")
