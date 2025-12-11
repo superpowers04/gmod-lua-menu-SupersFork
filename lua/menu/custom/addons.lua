@@ -17,6 +17,7 @@ local PANEL = {
 	anyAddonChanged=false,
 }
 local searchQuery = nil
+local FGColor = Color( 250, 240, 250, 256 )
 local BackgroundColor = Color( 200, 200, 200, 128 )
 local BackgroundColor2 = Color( 200, 200, 200, 255 ) --Color( 0, 0, 0, 100 )
 local missingMat = Material("../html/img/addonpreview.png", "nocull smooth")
@@ -37,9 +38,30 @@ local Addon_Object = {
 		DermaCheckbox:SetValue( 0 )
 		self.DermaCheckbox = DermaCheckbox
 	end,
+	
+	updateModStuffs = function(self)
+		PANEL.modImage:SetMaterial(self.Image or missingMat)
+		PANEL.modText:SetBGColor(BackgroundColor)
+		PANEL.modText:SetFGColor(Color(256,256,256,256))
+		local text = {self.Addon.title,''}
+		if(self.AdditionalData) then
+			local data = self.AdditionalData
+			text[#text+1] = data.description
+			if(#data.children > 0) then
+				local dependsOn = {}
+				for i,v in ipairs(data.children) do
+					dependsOn[#dependsOn+1] = gDataTable[v] and gDataTable[v].title or v
+				end
+				text[#text+1] = "\n\nDepends on: " .. table.concat( dependsOn, ", ")
+			end
+		end
+
+		PANEL.modText:SetText(table.concat(text,'\n'))
+	end,
 	OnMouseReleased = function (self, mousecode)
 		if ( mousecode == MOUSE_MIDDLE ) then 
 			self:SetAddonState(!self:GetAddonState())
+			self:updateModStuffs()
 			return
 		end
 		if ( mousecode ~= MOUSE_RIGHT ) then 
@@ -66,11 +88,13 @@ local Addon_Object = {
 					for i=_start,_end do
 						addonList[i]:SetSelected(true)
 					end
+					self:updateModStuffs()
 					return
 				end
 			end
 
 			self:SetSelected(!self:GetSelected())
+			self:updateModStuffs()
 			
 			return
 		end
@@ -99,6 +123,7 @@ local Addon_Object = {
 		m:AddSpacer()
 		m:AddOption( "Cancel", function() end )
 		m:Open()
+		self:updateModStuffs()
 	end,
 
 	SetAddonState = function(self, state)
@@ -114,15 +139,23 @@ local Addon_Object = {
 	end, -- Do we need ApplyAddons here?
 
 	toggle = function(self) return end,
-	SetSelected = function(self, b) self.DermaCheckbox:SetChecked( b ) end,
+	SetSelected = function(self, b) 
+		self.DermaCheckbox:SetChecked( b )
+
+		
+	end,
 	GetSelected = function(self) return self.DermaCheckbox:GetChecked() end,
 
 
+	UpdateData = function(self, data)
+		self.AdditionalData = data
+		self:SetTooltip(data.title)
+	end,
 	SetAddon = function(self, data)
 		self.Addon = data
 		self:SetTooltip(self.Addon.title)
 		if ( gDataTable[ data.wsid ] ) then 
-			self.AdditionalData = gDataTable[ data.wsid ]
+			self:UpdateData(gDataTable[data.wsid])
 			return
 		end
 
@@ -135,9 +168,8 @@ local Addon_Object = {
 
 			if ( !IsValid(self) ) then return end
 
-
 			self.panel:RefreshAddons()
-			self.AdditionalData = result
+			self.AdditionalData = data
 		end )
 	end,
 	Paint = function(self, w, h )
@@ -316,13 +348,33 @@ function PANEL:Init()
 	self:Dock( FILL )
 
 	local Categories = vgui.Create( "DListLayout", self )
-	Categories:DockPadding( 5, 200, 5, 5 )
-	Categories:Dock( LEFT )
-	Categories:SetWide( 200 )
+	Categories:DockPadding( 5, 5, 5, 5 )
+	Categories:Dock( RIGHT )
+	Categories:SetWide( 350 )
 
 
 	--[[ ------------------------------------------------------------------------- ]]
 
+	local modImage = vgui.Create( "DImage", Categories )
+	modImage:Dock( TOP )
+	modImage:SetWidth( 350 )
+	modImage:SetHeight( 350 )
+	modImage:SetZPos( -1 )
+	modImage:DockMargin( 0, 0, 0, 0 )
+	modImage:SetMaterial(missingMat)
+
+	PANEL.modImage = modImage
+
+	local modText = vgui.Create( "RichText", Categories )
+	modText:Dock( TOP )
+	modText:SetTall( 300 )
+	modText:SetZPos( -1 )
+	modText:DockMargin( 0, 0, 0, 20 )
+
+	PANEL.modText = modText
+
+
+	--[[ ------------------------------------------------------------------------- ]]
 	local searchBar = vgui.Create( "DFancyTextEntry", Categories )
 	searchBar:Dock( TOP )
 	searchBar:SetFont( "DermaRobotoDefault" )
@@ -342,8 +394,9 @@ function PANEL:Init()
 	local Groups = vgui.Create( "DComboBox", Categories )
 	self.Groups = Groups
 	Groups:Dock( TOP )
-	Groups:SetTall( 30 )
-	Groups:DockMargin( 0, 0, 0, 5 )
+	Groups:DockMargin( 0, 0, 160, -20 )
+	Groups:SetTall( 20 )
+	Groups:SetWide( 140 )
 	for id, group in pairs( Grouping ) do 
 		Groups:AddChoice( "Group by: " .. group.label, id, !Groups:GetSelectedID() )
 	end
@@ -352,8 +405,9 @@ function PANEL:Init()
 	local Filters = vgui.Create( "DComboBox", Categories )
 	self.Filters = Filters
 	Filters:Dock( TOP )
-	Filters:SetTall( 30 )
-	Filters:DockMargin( 0, 0, 0, 40 )
+	Filters:DockMargin( 200, 0, 0, 40 )
+	Filters:SetTall( 20 )
+	Filters:SetWide( 150 )
 	for id, f in pairs( AddonFilters ) do 
 		Filters:AddChoice( "Filter by: " .. f.label, id, !Filters:GetSelectedID() )
 	end
@@ -361,62 +415,62 @@ function PANEL:Init()
 
 	--[[ ------------------------------------------------------------------------- ]]
 
-	local ToggleMounted = vgui.Create( "DButton", Categories )
-	self.ToggleMounted = ToggleMounted
-	ToggleMounted:Dock( TOP )
-	ToggleMounted:SetText( "#Toggle Selected" )
-	ToggleMounted:SetTall( 30 )
-	ToggleMounted:DockMargin( 0, 0, 0, 5 )
-	ToggleMounted.DoClick = function() self:ToggleSelected() end
-
-	local EnableSelection = vgui.Create( "DButton", Categories )
-	self.EnableSelection = EnableSelection
-	EnableSelection:Dock( TOP )
-	EnableSelection:SetText( "#Enable Selected" )
-	EnableSelection:SetTall( 30 )
-	EnableSelection:DockMargin( 0, 0, 0, 5 )
-	EnableSelection.DoClick = function() self:EnableSelected() end
-
-	local DisableSelection = vgui.Create( "DButton", Categories )
-	self.DisableSelection = DisableSelection
-	DisableSelection:Dock( TOP )
-	DisableSelection:SetText( "#Disable Selected" )
-	DisableSelection:SetTall( 30 )
-	DisableSelection:DockMargin( 0, 0, 0, 5 )
-	DisableSelection.DoClick = function() self:DisableSelected() end
-
-	--[[ ------------------------------------------------------------------------- ]]
-
 	local SelectAll = vgui.Create( "DButton", Categories )
 	self.SelectAllButton = SelectAll
 	SelectAll:Dock( TOP )
 	SelectAll:SetText( "#Select All" )
-	SelectAll:SetTall( 16 )
-	SelectAll:DockMargin( 0, 0, 0, 5 )
+	SelectAll:SetTall( 20 )
+	SelectAll:DockMargin( 0, 0, 230, -20 )
 	SelectAll.DoClick = function() self:SelectAll() end
 
 	local DeselectAll = vgui.Create( "DButton", Categories )
 	self.DeselectAllButton = DeselectAll
 	DeselectAll:Dock( TOP )
 	DeselectAll:SetText( "#Deselect All" )
-	DeselectAll:SetTall( 16 )
-	DeselectAll:DockMargin( 0, 0, 0, 5 )
+	DeselectAll:SetTall( 20 )
+	DeselectAll:DockMargin( 120, 0, 110, -20 )
 	DeselectAll.DoClick = function() self:DeselectAll() end
 
 	local InvertAll = vgui.Create( "DButton", Categories )
 	InvertAll:Dock( TOP )
-	InvertAll:SetText( "#Invert Selection" )
-	InvertAll:SetTall( 16 )
-	InvertAll:DockMargin( 0, 0, 0, 40 )
+	InvertAll:SetText( "#Invert" )
+	InvertAll:SetTall( 20 )
+	InvertAll:DockMargin( 240, 0, 0, 10 )
 	InvertAll.DoClick = function() self:InvertSelection() end
 
+
+	local ToggleMounted = vgui.Create( "DButton", Categories )
+	self.ToggleMounted = ToggleMounted
+	ToggleMounted:Dock( TOP )
+	ToggleMounted:SetText( "#Toggle Selected" )
+	ToggleMounted:SetTall( 20 )
+	ToggleMounted:DockMargin( 0, 0, 230, -20 )
+	ToggleMounted.DoClick = function() self:ToggleSelected() end
+
+	local EnableSelection = vgui.Create( "DButton", Categories )
+	self.EnableSelection = EnableSelection
+	EnableSelection:Dock( TOP )
+	EnableSelection:SetText( "#Enable Selected" )
+	EnableSelection:SetTall( 20 )
+	EnableSelection:DockMargin( 120, 0, 110, -20 )
+	EnableSelection.DoClick = function() self:EnableSelected() end
+
+	local DisableSelection = vgui.Create( "DButton", Categories )
+	self.DisableSelection = DisableSelection
+	DisableSelection:Dock( TOP )
+	DisableSelection:SetText( "#Disable Selected" )
+	DisableSelection:SetTall( 20 )
+	DisableSelection:DockMargin( 240, 0, 0, 10 )
+	DisableSelection.DoClick = function() self:DisableSelected() end
+
+	--[[ ------------------------------------------------------------------------- ]]
 	--[[ ------------------------------------------------------------------------- ]]
 
 	local OpenWorkshop = vgui.Create( "DButton", Categories )
 	OpenWorkshop:Dock( TOP )
 	OpenWorkshop:SetText( "#Open Workshop" )
 	OpenWorkshop:SetTall( 30 )
-	OpenWorkshop:DockMargin( 0, 40, 0, 0 )
+	OpenWorkshop:DockMargin( 0, 20, 0, 0 )
 	OpenWorkshop.DoClick = steamworks.OpenWorkshop
 
 	local OpenWorkshop = vgui.Create( "DButton", Categories )
@@ -433,7 +487,7 @@ function PANEL:Init()
 	delyeet:Dock( TOP )
 	delyeet:SetText( "#Uninstall Selected" )
 	delyeet:SetTall( 30 )
-	delyeet:DockMargin( 0, 40, 0, 0 )
+	delyeet:DockMargin( 0, 10, 0, 0 )
 	delyeet.DoClick = function() 
 		self:UninstallSelected()
 	end
@@ -443,7 +497,7 @@ function PANEL:Init()
 
 	local Scroll = vgui.Create( "DScrollPanel", self )
 	Scroll:Dock( FILL )
-	Scroll:DockMargin( 0, 5, 5, 5 )
+	Scroll:DockMargin( 5, 5, 5, 5 )
 	function Scroll:Paint( w, h )
 		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor, false, true, false, true )
 		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor2, false, true, false, true )
@@ -454,7 +508,7 @@ function PANEL:Init()
 	AddonList:SetSpaceY(5)
 	AddonList:Dock(FILL)
 	AddonList:DockMargin(5, 5, 5, 5)
-	AddonList:DockPadding(5, 5, 5, 10)
+	AddonList:DockPadding(5, 5, 5, 5)
 
 	PANEL.AddonList = AddonList
 	self.AddonList = AddonList
