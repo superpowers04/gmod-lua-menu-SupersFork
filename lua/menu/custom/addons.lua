@@ -274,6 +274,30 @@ local AddonFilters = {
 	},
 }
 
+local Sorting = {
+	{
+		label = "Name",
+		id="title",
+	},
+	{
+		label = "Last Updated",
+		id="updated",
+	},
+	{
+		label = "Size",
+		id="size",
+	},
+	{
+		label = "Sub date",
+		id="timeadded",
+	},
+	{
+		label = "ID",
+		id="id",
+	},
+
+}
+
 local Grouping = {
 	none = {
 		label = "None",
@@ -438,6 +462,16 @@ function PANEL:Init()
 	end
 	Filters.OnSelect = function( index, value, data ) self:RefreshAddons() end
 
+	local Sorts = vgui.Create( "DComboBox", Categories )
+	self.Sorts = Sorts
+	Sorts:Dock( TOP )
+	Sorts:DockMargin( 0, 0, 160, 40 )
+	Sorts:SetTall( 20 )
+	Sorts:SetWide( 140 )
+	for id, sort in pairs( Sorting ) do 
+		Sorts:AddChoice( "Sort by: " .. sort.label, id, !Sorts:GetSelectedID() )
+	end
+	Sorts.OnSelect = function( index, value, data ) self:RefreshAddons() end
 	--[[ ------------------------------------------------------------------------- ]]
 
 	local SelectAll = vgui.Create( "DButton", Categories )
@@ -660,6 +694,7 @@ function PANEL:RefreshAddons()
 
 	local grp = self.Groups:GetOptionData( self.Groups:GetSelectedID() )
 	local filter = self.Filters:GetOptionData( self.Filters:GetSelectedID() )
+	local sort = self.Sorts:GetOptionData( self.Sorts:GetSelectedID() )
 
 	local addons = Grouping[ grp ].func( engine.GetAddons() )
 
@@ -686,7 +721,7 @@ function PANEL:RefreshAddons()
 			pnl:SizeToContents()
 		end
 
-		for k, mod in SortedPairsByMemberValue( addns, "title" ) do
+		for k, mod in SortedPairsByMemberValue( addns, Sorting[sort].id ) do
 
 			local pnl = self.AddonList:Add( "MenuAddon" )
 			pnl.panel = self
