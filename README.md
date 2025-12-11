@@ -8,6 +8,8 @@ Main changes
 * Completely custom addon pack implementation(Addonpacks are text files in `GarrysMod/garrysmod/data/addon_packs_smmenu/` containing `ID NAME` seperated by newlines)
 * Saves, and Demos now have a search bar
 * Hopefully better programming
+<img width="1920" height="1078" alt="image" src="https://github.com/user-attachments/assets/dd9e61a9-165e-41f6-aecf-3dc2daba5d06" />
+
 
 
 
