@@ -35,6 +35,17 @@ local function fileSize(n)
 	return ('%.2f '):format(n) .. ({"B",'KB',"MB",'GB','TB','PB','???'})[i]
 end
 
+local function getDataFromID(id)
+	id=tostring(id)
+	if gDataTable[id] then return gDataTable[id] end
+	local tbl = {
+		dependants = {},
+	}
+
+	gDataTable[id] = tbl
+	return tbl
+end
+
 
 
 local Addon_Object = {
@@ -58,17 +69,29 @@ local Addon_Object = {
 		if(self.AdditionalData) then
 			local data = self.AdditionalData
 			text[#text+1] = data.description
-			if(#data.children > 0) then
-				local dependsOn = {}
-				for i,v in ipairs(data.children) do
-					dependsOn[#dependsOn+1] = gDataTable[v] and gDataTable[v].title or v
-				end
-				text[#text+1] = "\n\nDepends on: " .. table.concat( dependsOn, ", ")
-			end
-			text[#text+1] = "Size: " .. fileSize(data.size)
+			text[#text+1] = "\nSize: " .. fileSize(data.size)
 			text[#text+1] = ("Score: %.2f"):format(data.score)
 			text[#text+1] = ("Upvotes/Downvotes: %i/%i"):format(data.up,data.down)
-			text[#text+1] = "Content Descriptors: " .. table.concat( data.content_descriptors, ", ")
+			if(#data.content_descriptors > 0) then
+				text[#text+1] = "Content Descriptors: " .. table.concat( data.content_descriptors, ", ")
+			end
+			if(#data.children > 0) then
+				local dependsOn = {}
+				for i,id in ipairs(data.children) do
+					local id = tostring(id)
+					dependsOn[#dependsOn+1] = gDataTable[id] and gDataTable[id].title or v .. '(N/A)'
+				end
+				text[#text+1] = "\nRequires: " .. table.concat( dependsOn, ", ")
+			end
+			if(data.dependants) then
+				local dependants = {}
+				for id in pairs(data.dependants) do
+					dependants[#dependants+1] = gDataTable[id] and gDataTable[id].title or v .. '(N/A)'
+				end
+				if(#dependants > 0) then
+					text[#text+1] = "\nRequired by: " .. table.concat( dependants, ", ")
+				end
+			end
 
 		end
 
@@ -174,6 +197,10 @@ local Addon_Object = {
 	UpdateData = function(self, data)
 		self.AdditionalData = data
 		self:SetTooltip(data.title)
+		if(not self.Addon.wsid) then return end
+		for i,v in pairs(data.children) do
+			getDataFromID(v).dependants[self.Addon.wsid] = true
+		end
 	end,
 	SetAddon = function(self, data)
 		self.Addon = data
@@ -182,30 +209,36 @@ local Addon_Object = {
 			self:UpdateData(gDataTable[data.wsid])
 			return
 		end
+		if data.wsid then
+			getDataFromID(data.wsid)
+		end
 
 		steamworks.FileInfo( data.wsid, function( result )
-			gDataTable[ data.wsid ] = result
+			-- gDataTable[ data.wsid ] = result
+			local tbl = gDataTable[ data.wsid ]
+			for i,v in pairs(result) do
+				tbl[i]=v
+			end
+
 
 			if ( !file.Exists( "cache/workshop/" .. result.previewid .. ".cache", "MOD" ) ) then
-				steamworks.Download( result.previewid, false, function( name ) end )
+				steamworks.Download( result.previewid, false, function(name) end )
 			end
 
 			if ( !IsValid(self) ) then return end
 
 			self.panel:RefreshAddons()
-			self.AdditionalData = data
+			self:UpdateData(result)
 		end )
 	end,
 	Paint = function(self, w, h )
-		if ( IsValid( self.DermaCheckbox ) ) then
+		if ( IsValid(self.DermaCheckbox) ) then
 			self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
 		end
 
-		if ( self.AdditionalData and imageCache[ self.AdditionalData.previewid ] ) then
+		if (imageCache[ self.AdditionalData.previewid ]) then
 			self.Image = imageCache[ self.AdditionalData.previewid ]
-		end
-
-		if ( !self.Image and self.AdditionalData and file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) and CurTime() - lastBuild > 0.1 ) then
+		elseif (CurTime() - lastBuild) > 0.1 and file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) then
 			self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
 			imageCache[ self.AdditionalData.previewid ] = self.Image
 			lastBuild = CurTime()
@@ -454,7 +487,7 @@ function PANEL:Init()
 	local Filters = vgui.Create( "DComboBox", Categories )
 	self.Filters = Filters
 	Filters:Dock( TOP )
-	Filters:DockMargin( 200, 0, 0, 40 )
+	Filters:DockMargin( 200, 0, 0, 20 )
 	Filters:SetTall( 20 )
 	Filters:SetWide( 150 )
 	for id, f in pairs( AddonFilters ) do 
@@ -465,7 +498,7 @@ function PANEL:Init()
 	local Sorts = vgui.Create( "DComboBox", Categories )
 	self.Sorts = Sorts
 	Sorts:Dock( TOP )
-	Sorts:DockMargin( 0, 0, 160, 40 )
+	Sorts:DockMargin( 0, 0, 160, 20 )
 	Sorts:SetTall( 20 )
 	Sorts:SetWide( 140 )
 	for id, sort in pairs( Sorting ) do 
