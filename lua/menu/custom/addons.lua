@@ -425,6 +425,8 @@ local Grouping = {
 
 
 function PANEL:Init()
+	searchQuery = nil
+
 
 	self:Dock( FILL )
 
