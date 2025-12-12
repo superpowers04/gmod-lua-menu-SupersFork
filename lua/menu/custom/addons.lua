@@ -165,17 +165,17 @@ local Addon_Object = {
 			else
 				m:AddOption("Enable", function() self.queuedAction = self.EnableAddon end)
 			end
-			if(self.AdditionalData and self.AdditionalData.dependants) then
+			if(self.AdditionalData) then
 				for _ in pairs(self.AdditionalData.dependants) do
 					m:AddOption("Select all dependants", function()
-						self:SetSelected(true)
-						for id in pairs(self.AdditionalData.dependants) do
-							if(gDataTable[id] and gDataTable[id].panel_object) then
-								gDataTable[id].panel_object:SetSelected(true)
-							end
-						end
+						self:SelectDependants()
 					end)
 					break
+				end
+				if(#self.AdditionalData.children) then
+					m:AddOption("Select all related", function()
+						self:SelectRelated()
+					end)
 				end
 			end
 
@@ -200,12 +200,36 @@ local Addon_Object = {
 	end, -- Do we need ApplyAddons here?
 
 	toggle = function(self) return end,
-	SetSelected = function(self, b) 
-		self.DermaCheckbox:SetChecked( b )
-
-		
-	end,
+	SetSelected = function(self, b) self.DermaCheckbox:SetChecked( b ) end,
 	GetSelected = function(self) return self.DermaCheckbox:GetChecked() end,
+	SelectDependants = function(self, goneOver)
+		if not goneOver then goneOver = {} end
+		if(goneOver[self]) then return end -- If we don't do this, we will probably encounter an endless loop
+		goneOver[self] = true
+		self:SetSelected(true)
+		for id in pairs(self.AdditionalData.dependants) do
+			if(gDataTable[id] and gDataTable[id].panel_object) then
+				gDataTable[id].panel_object:SelectDependants(goneOver)
+			end
+		end
+	end,
+	SelectRelated = function(self, goneOver)
+		if not goneOver then goneOver = {} end
+		if(goneOver[self]) then return end -- If we don't do this, we will probably encounter an endless loop
+		goneOver[self] = true
+		self:SetSelected(true)
+		for id in pairs(self.AdditionalData.dependants) do
+			if(gDataTable[id] and gDataTable[id].panel_object) then
+				gDataTable[id].panel_object:SelectRelated(goneOver)
+			end
+		end
+		for _,id in pairs(self.AdditionalData.children) do
+			id=tostring(id)
+			if(gDataTable[id] and gDataTable[id].panel_object) then
+				gDataTable[id].panel_object:SelectRelated(goneOver)
+			end
+		end
+	end,
 
 
 	UpdateData = function(self, data)
