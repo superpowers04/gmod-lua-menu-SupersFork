@@ -154,32 +154,26 @@ local Addon_Object = {
 		end
 		if ( self.Addon ) then
 			m:AddOption( "Open Workshop Page", function() 
-				self.queuedAction = function(self) 
-					steamworks.ViewFile( self.Addon.wsid )
-				end
+				steamworks.ViewFile( self.Addon.wsid )
 			end)
 			m:AddSpacer()
 			local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
 			if(should_mount_addon) then
-				m:AddOption("Disable", function() self.queuedAction = self.DisableAddon end)
+				m:AddOption("Disable", function() self:DisableAddon() end)
 			else
-				m:AddOption("Enable", function() self.queuedAction = self.EnableAddon end)
+				m:AddOption("Enable", function() self:EnableAddon() end)
 			end
 			if(self.AdditionalData) then
 				for _ in pairs(self.AdditionalData.dependants) do
-					m:AddOption("Select all dependants", function()
-						self:SelectDependants()
-					end)
+					m:AddOption("Select all dependants", function() self:SelectDependants() end)
 					break
 				end
 				if(#self.AdditionalData.children) then
-					m:AddOption("Select all related", function()
-						self:SelectRelated()
-					end)
+					m:AddOption("Select all related", function() self:SelectRelated() end)
 				end
 			end
 
-			m:AddOption( "Uninstall", function() self.queuedAction = self.UninstallAddon end) 
+			m:AddOption( "Uninstall", function() self:UninstallAddon() end) 
 		end
 		m:AddSpacer()
 		m:AddOption( "Cancel", function() end )
@@ -236,69 +230,86 @@ local Addon_Object = {
 		self.AdditionalData = data
 		self:SetTooltip(data.title)
 		data.panel_object = self
+
+		self:UpdateIcon()
 		if(not self.Addon.wsid or not data.children) then return end
 		for i,v in pairs(data.children) do
 			getDataFromID(v).dependants[self.Addon.wsid] = true
 		end
 	end,
+
+	_loadImage = function(self)
+		self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
+		imageCache[ self.AdditionalData.previewid ] = self.Image
+		-- lastBuild = CurTime()
+		print(self.AdditionalData.previewid)
+	end,
+	UpdateIcon = function(self)
+		if (imageCache[ self.AdditionalData.previewid ]) then
+			self.Image = imageCache[ self.AdditionalData.previewid ]
+			return
+		end
+		if file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) then
+			self.queuedAction = self._loadImage
+			return
+		end
+	end,
 	SetAddon = function(self, data)
+		self.Image = nil
 		self.Addon = data
 		self:SetTooltip(self.Addon.title)
+		if not data.wsid then 
+			ErrorNoHaltWithStack("Addon has no workshop id?!")
+			return
+		end
+
+
 		local datatable = gDataTable[data.wsid]
 		if ( datatable ) then 
 			self:UpdateData(datatable)
 			return
 		end
-		if data.wsid then
-			getDataFromID(data.wsid)
+		local cached_data = getDataFromID(data.wsid)
+		self.AdditionalData = cached_data
+		for i,v in pairs(data) do
+			if(cached_data[i] == nil) then
+				cached_data[i]=v
+			end
 		end
 
 		steamworks.FileInfo( data.wsid, function( _result )
 			-- gDataTable[ data.wsid ] = result
-			local result = gDataTable[ data.wsid ]
 			for i,v in pairs(_result) do
-				result[i]=v
+				cached_data[i]=v
 			end
 
 
-			if ( !file.Exists( "cache/workshop/" .. result.previewid .. ".cache", "MOD" ) ) then
-				steamworks.Download( result.previewid, false, function(name) end )
+			if ( !file.Exists( "cache/workshop/" .. cached_data.previewid .. ".cache", "MOD" ) ) then
+				steamworks.Download( cached_data.previewid, false, function(name) end )
 			end
 
 			if ( !IsValid(self) ) then return end
 
-			self.panel:RefreshAddons()
-			self:UpdateData(result)
+			-- self.panel:RefreshAddons()
+			self:UpdateData(cached_data)
+			self:UpdateIcon()
 		end )
 	end,
 	Paint = function(self, w, h )
-		if ( IsValid(self.DermaCheckbox) ) then
-			self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
-		end
-		if(self.AdditionalData and self.AdditionalData.previewid) then
-			if (imageCache[ self.AdditionalData.previewid ]) then
-				self.Image = imageCache[ self.AdditionalData.previewid ]
-			elseif (CurTime() - lastBuild) > 0.1 and file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) then
-				self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
-				imageCache[ self.AdditionalData.previewid ] = self.Image
-				lastBuild = CurTime()
-			end
-		end
+		-- if ( IsValid(self.DermaCheckbox) ) then
+		-- 	self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
+		-- end
 		if ( self:GetSelected() ) then
 			draw.RoundedBox( 4, 0, 0, w, h, selectedColor )
 		end
-		if ( self.Addon and steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
-			draw.RoundedBox( 4, 2, 2, w-4, h-4, enabledColor )
-		else
-			draw.RoundedBox( 4, 2, 2, w-4, h-4, disabledColor )
-		end
+		
+		draw.RoundedBox( 4, 2, 2, w-4, h-4, self.Addon and steamworks.ShouldMountAddon( self.Addon.wsid ) and enabledColor or disabledColor)
 
 		surface.SetMaterial( self.Image or missingMat)
 		local tall,wide = self:GetTall(),self:GetWide()
 		local imageSize = tall - 10
 		surface.SetDrawColor( color_white )
 		surface.DrawTexturedRect( 5, 5, imageSize, imageSize )
-		if not self.Addon then return end
 
 		--[[if ( self.Addon and !steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
 			draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 180 ) )
@@ -306,15 +317,16 @@ local Addon_Object = {
 
 		if ( self.Hovered ) then
 			draw.RoundedBox( 0, 5, h - 20, w - 10, 15, Color( 0, 0, 0, 180 ) )
-			local title = self.Addon.title
+			local title = self.Addon and self.Addon.title or "N/A"
 			local tw = surface.GetTextSize( title )
 			local offset = 0
 			if ( tw > w ) then
 				offset=( ( w - tw ) * math.sin( CurTime() ) )
 			end
-			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 24, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 18, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 		end
-		if( self.queuedAction and not self:queuedAction()) then
+		if self.queuedAction then
+			self:queuedAction()
 			self.queuedAction=nil
 		end
 

@@ -189,8 +189,6 @@ function PANEL:Paint()
 		
 		self.Disconnect:SetVisible(self.IsInGame)
 		self.Resume:SetVisible(self.IsInGame)
-
-
 	end
 
 end
