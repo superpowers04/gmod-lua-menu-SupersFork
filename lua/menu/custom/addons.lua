@@ -242,7 +242,6 @@ local Addon_Object = {
 		self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
 		imageCache[ self.AdditionalData.previewid ] = self.Image
 		-- lastBuild = CurTime()
-		print(self.AdditionalData.previewid)
 	end,
 	UpdateIcon = function(self)
 		if (imageCache[ self.AdditionalData.previewid ]) then
