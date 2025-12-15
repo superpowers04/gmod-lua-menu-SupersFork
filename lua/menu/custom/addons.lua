@@ -239,9 +239,12 @@ local Addon_Object = {
 	end,
 
 	_loadImage = function(self)
+		local curtime = CurTime()
+		if(curtime - lastBuild < 0.02) then return true end
 		self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
 		imageCache[ self.AdditionalData.previewid ] = self.Image
-		-- lastBuild = CurTime()
+		lastBuild = curtime
+		
 	end,
 	UpdateIcon = function(self)
 		if (imageCache[ self.AdditionalData.previewid ]) then
@@ -324,8 +327,8 @@ local Addon_Object = {
 			end
 			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 18, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 		end
-		if self.queuedAction then
-			self:queuedAction()
+		if self.queuedAction and not self:queuedAction() then
+			
 			self.queuedAction=nil
 		end
 
