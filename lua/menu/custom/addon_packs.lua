@@ -1,23 +1,25 @@
 
 if(!file.IsDir('addon_packs_smmenu','DATA')) then file.CreateDir('addon_packs_smmenu') end
-local PANEL = {}
 local searchQuery = nil
 
+local PANEL = {}
 function PANEL:Init()
 	self:Dock( FILL )
-	local Options = vgui.Create( "DListLayout", self )
+	local Options = self:Add("Panel")
 	Options:DockPadding( 5, 200, 5, 5 )
 	Options:Dock( LEFT )
 	Options:SetWide( 200 )
 	self.Options = Options
 
 
-	local searchBar = vgui.Create( "DFancyTextEntry", Options, 'searchBar')
+	local searchBar = Options:Add( "DFancyTextEntry")
 	searchBar:Dock( TOP )
 	searchBar:SetFont( "DermaRobotoDefault" )
 	searchBar:SetPlaceholderText( "searchbar_placeholer" )
 	searchBar:SetText(searchQuery or "")
-	searchBar:DockMargin( 0, 0, 0, 50 )
+	searchBar:DockMargin( 0, 0, 0, 0 )
+	searchBar:SetZPos( -1 )
+	searchBar:SetHeight( 24 )
 	searchBar:SetUpdateOnType( true )
 	searchBar.OnValueChange = function() 
 		searchQuery = searchBar:GetText():lower()
@@ -26,17 +28,21 @@ function PANEL:Init()
 	end
 
 
-	local FilenameBar = vgui.Create( "DFancyTextEntry", Options, 'FilenameBar')
+	local FilenameBar = Options:Add( "DFancyTextEntry")
 	FilenameBar:Dock( TOP )
 	FilenameBar:SetFont( "DermaRobotoDefault" )
 	FilenameBar:SetPlaceholderText( "filename" )
-	FilenameBar:DockMargin( 0, 40, 0, 0 )
+	FilenameBar:SetZPos( -1 )
+	FilenameBar:SetHeight( 24 )
+	FilenameBar:DockMargin( 0, 0, 0, 20 )
 	self.FilenameBar = FilenameBar
 
-	local SavePackButton = vgui.Create( "DButton", Options, 'SavePackButton')
+	local SavePackButton = Options:Add( "DButton")
 	SavePackButton:Dock( TOP )
 	SavePackButton:SetText( "#Save addon pack" )
-	-- SavePackButton:DockMargin( 0, 50, 0, 0 )
+	SavePackButton:SetHeight( 24 )
+	SavePackButton:SetZPos( -1 )
+	SavePackButton:DockMargin( 0, 0, 0, 20 )
 	SavePackButton.DoClick = function() 
 		local filename = FilenameBar:GetText()
 		if(filename == "") then
@@ -51,24 +57,27 @@ function PANEL:Init()
 	end
 	self.SavePackButton = SavePackButton
 
-	--[[ --]] 
-
-	local Scroll = vgui.Create( "DScrollPanel", self )
+	local Scroll = self:Add("DScrollPanel")
 	Scroll:Dock( FILL )
-	Scroll:DockMargin( 30, 5, 5, 5 )
+	Scroll:DockMargin( 20, 5, 5, 5 )
 
 	self.Scroll = Scroll
-
-
+	List = vgui.Create( "DListLayout", self.Scroll, "packlist")
+	List:Dock( FILL )
+	self.List = List
 	self:RegenerateList()
-
 end
+
+vgui.Register( "AddonPacksPanel", PANEL, "EditablePanel" )
+
+
+
 function PANEL:savePack(path)
 	if(!path:EndsWith('.txt')) then
 		path = path..'.txt'
 	end
 	local mods = {}
-	for _, addon in pairs( engine.GetAddons() ) do
+	for _, addon in pairs(engine.GetAddons()) do
 		if( steamworks.ShouldMountAddon( addon.wsid ) ) then
 			mods[#mods+1] = addon.wsid .. " ".. addon.title
 		end
@@ -83,7 +92,7 @@ function PANEL:selectPack(path, state, only, subscribe)
 	local state = (state == nil and true) or (state and true or false)
 
 	if(only) then
-		for _, addon in pairs( engine.GetAddons() ) do
+		for _, addon in pairs(engine.GetAddons()) do
 			steamworks.SetShouldMountAddon( addon.wsid, false )
 		end
 	end
@@ -102,31 +111,25 @@ end
 function PANEL:RegenerateList()
 
 	local List = self.List
-	if(self.list) then
-		List:Clear()
-		List:Remove()
-	end
-	List = vgui.Create( "DListLayout", self.Scroll, "packlist")
-	List:Dock( FILL )
-	self.List = List
+	List:Clear()
+	
 
 	local f = file.Find( "addon_packs_smmenu/*.txt", "DATA", "datedesc" )
 
 	if(table.Count(f) == 0) then
 
-		local ErrorButton = vgui.Create( "DButton" , List ) -- This is honestly stupid but other issues are more important
-		ErrorButton:Dock( TOP )
-		ErrorButton:SetText( "#No packs found" )
-		ErrorButton:SetTall( 30 )
-		ErrorButton:SetWide( 30 )
-		ErrorButton:DockMargin( 0, 50, 0, 0 )
+		local ErrorButton = List:Add("DButton") -- This is honestly stupid but other issues are more important
+		ErrorButton:SetText("#No packs found")
+		ErrorButton:SetTall(30)
+		ErrorButton:SetWide(30)
+		ErrorButton:DockMargin(0, 300, 0, 0)
 		
 		return
 	end
 
 	for k, v in pairs( f ) do
 		if(searchQuery && !v:lower():find(searchQuery)) then continue end
-		local ListItem = vgui.Create( "DButton" , List, 'button-'..v)
+		local ListItem = List:Add("DButton")
 		ListItem:SetText( v:StripExtension() )
 		ListItem.DoDoubleClick = function()
 			select(v)
@@ -136,8 +139,6 @@ function PANEL:RegenerateList()
 		-- end
 		ListItem.DoRightClick = function()
 			local m = DermaMenu()
-
-			
 			m:AddOption("Enable only pack", function()
 				self:selectPack(v, true, true)
 			end)
@@ -166,9 +167,3 @@ function PANEL:RegenerateList()
 	end
 end
 
-function PANEL:Paint( w, h )
-	surface.SetDrawColor( 0, 0, 0, 150 )
-	surface.DrawRect( 0, 0, w, h )
-end
-
-vgui.Register( "AddonPacksPanel", PANEL, "EditablePanel" )

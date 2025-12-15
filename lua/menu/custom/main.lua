@@ -120,7 +120,7 @@ function PANEL:Init()
 	Saves:DockMargin( 5, 0, 5, 0 )
 	Saves:SetText( "#saves" )
 	Saves.DoClick = function()
-		self:GetParent():OpenCreationMenu( false, "saves" )
+		self:GetParent():OpenSavesMenu( false, "saves" )
 	end
 
 	local Demos = vgui.Create( "MenuButton", mainButtons )
@@ -128,7 +128,7 @@ function PANEL:Init()
 	Demos:DockMargin( 5, 0, 5, 0 )
 	Demos:SetText( "#demos" )
 	Demos.DoClick = function()
-		self:GetParent():OpenCreationMenu( false, "demos" )
+		self:GetParent():OpenSavesMenu( false, "demos" )
 	end
 
 	local Achievements = vgui.Create( "MenuButton", mainButtons )

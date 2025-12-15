@@ -484,7 +484,7 @@ function PANEL:Init()
 
 	self:Dock( FILL )
 
-	local Categories = vgui.Create( "DListLayout", self )
+	local Categories = self:Add("Panel" )
 	Categories:DockPadding( 5, 5, 5, 5 )
 	Categories:Dock( RIGHT )
 	Categories:SetWide( 350 )
@@ -493,7 +493,7 @@ function PANEL:Init()
 
 	--[[ ------------------------------------------------------------------------- ]]
 
-	local modImage = vgui.Create( "DImage", Categories )
+	local modImage = Categories:Add("DImage")
 	modImage:Dock( TOP )
 	modImage:SetWidth( 350 )
 	modImage:SetHeight( 350 )
@@ -503,7 +503,7 @@ function PANEL:Init()
 
 	PANEL.modImage = modImage
 
-	local modText = vgui.Create( "RichText", Categories )
+	local modText = Categories:Add("RichText")
 	modText:Dock( TOP )
 	modText:SetTall( 300 )
 	modText:SetZPos( -1 )
@@ -513,7 +513,7 @@ function PANEL:Init()
 
 
 	--[[ ------------------------------------------------------------------------- ]]
-	local searchBar = vgui.Create( "DFancyTextEntry", Categories )
+	local searchBar = Categories:Add("DFancyTextEntry")
 	searchBar:Dock( TOP )
 	searchBar:SetFont( "DermaRobotoDefault" )
 	searchBar:SetPlaceholderText( "searchbar_placeholer" )
@@ -529,7 +529,7 @@ function PANEL:Init()
 
 	--[[ ------------------------------------------------------------------------- ]]
 
-	local Groups = vgui.Create( "DComboBox", Categories )
+	local Groups = Categories:Add("DComboBox")
 	self.Groups = Groups
 	Groups:Dock( TOP )
 	Groups:DockMargin( 0, 0, 160, -20 )
@@ -540,7 +540,7 @@ function PANEL:Init()
 	end
 	Groups.OnSelect = function( index, value, data ) self:RefreshAddons() end
 
-	local Filters = vgui.Create( "DComboBox", Categories )
+	local Filters = Categories:Add("DComboBox")
 	self.Filters = Filters
 	Filters:Dock( TOP )
 	Filters:DockMargin( 200, 0, 0, 20 )
@@ -551,7 +551,7 @@ function PANEL:Init()
 	end
 	Filters.OnSelect = function( index, value, data ) self:RefreshAddons() end
 
-	local Sorts = vgui.Create( "DComboBox", Categories )
+	local Sorts = Categories:Add("DComboBox")
 	self.Sorts = Sorts
 	Sorts:Dock( TOP )
 	Sorts:DockMargin( 0, 0, 160, 20 )
@@ -563,7 +563,7 @@ function PANEL:Init()
 	Sorts.OnSelect = function( index, value, data ) self:RefreshAddons() end
 	--[[ ------------------------------------------------------------------------- ]]
 
-	local SelectAll = vgui.Create( "DButton", Categories )
+	local SelectAll = Categories:Add("DButton")
 	self.SelectAllButton = SelectAll
 	SelectAll:Dock( TOP )
 	SelectAll:SetText( "#Select All" )
@@ -571,7 +571,7 @@ function PANEL:Init()
 	SelectAll:DockMargin( 0, 0, 230, -20 )
 	SelectAll.DoClick = function() self:SelectAll() end
 
-	local DeselectAll = vgui.Create( "DButton", Categories )
+	local DeselectAll = Categories:Add("DButton")
 	self.DeselectAllButton = DeselectAll
 	DeselectAll:Dock( TOP )
 	DeselectAll:SetText( "#Deselect All" )
@@ -579,7 +579,7 @@ function PANEL:Init()
 	DeselectAll:DockMargin( 120, 0, 110, -20 )
 	DeselectAll.DoClick = function() self:DeselectAll() end
 
-	local InvertAll = vgui.Create( "DButton", Categories )
+	local InvertAll = Categories:Add("DButton")
 	InvertAll:Dock( TOP )
 	InvertAll:SetText( "#Invert" )
 	InvertAll:SetTall( 20 )
@@ -587,7 +587,7 @@ function PANEL:Init()
 	InvertAll.DoClick = function() self:InvertSelection() end
 
 
-	local ToggleMounted = vgui.Create( "DButton", Categories )
+	local ToggleMounted = Categories:Add("DButton")
 	self.ToggleMounted = ToggleMounted
 	ToggleMounted:Dock( TOP )
 	ToggleMounted:SetText( "#Toggle Selected" )
@@ -595,7 +595,7 @@ function PANEL:Init()
 	ToggleMounted:DockMargin( 0, 0, 230, -20 )
 	ToggleMounted.DoClick = function() self:ToggleSelected() end
 
-	local EnableSelection = vgui.Create( "DButton", Categories )
+	local EnableSelection = Categories:Add("DButton")
 	self.EnableSelection = EnableSelection
 	EnableSelection:Dock( TOP )
 	EnableSelection:SetText( "#Enable Selected" )
@@ -603,7 +603,7 @@ function PANEL:Init()
 	EnableSelection:DockMargin( 120, 0, 110, -20 )
 	EnableSelection.DoClick = function() self:EnableSelected() end
 
-	local DisableSelection = vgui.Create( "DButton", Categories )
+	local DisableSelection = Categories:Add("DButton")
 	self.DisableSelection = DisableSelection
 	DisableSelection:Dock( TOP )
 	DisableSelection:SetText( "#Disable Selected" )
@@ -614,14 +614,14 @@ function PANEL:Init()
 	--[[ ------------------------------------------------------------------------- ]]
 	--[[ ------------------------------------------------------------------------- ]]
 
-	local OpenWorkshop = vgui.Create( "DButton", Categories )
+	local OpenWorkshop = Categories:Add("DButton")
 	OpenWorkshop:Dock( TOP )
 	OpenWorkshop:SetText( "#Open Workshop" )
 	OpenWorkshop:SetTall( 30 )
 	OpenWorkshop:DockMargin( 0, 20, 0, 0 )
 	OpenWorkshop.DoClick = steamworks.OpenWorkshop
 
-	local ApplyAddonChanges = vgui.Create( "DButton", Categories )
+	local ApplyAddonChanges = Categories:Add("DButton")
 	ApplyAddonChanges:Dock( TOP )
 	ApplyAddonChanges:SetText( "#Apply Addon Changes" )
 	ApplyAddonChanges:SetTall( 30 )
@@ -631,7 +631,7 @@ function PANEL:Init()
 		steamworks.ApplyAddons()
 	end
 
-	local delyeet = vgui.Create( "DButton", Categories )
+	local delyeet = Categories:Add("DButton")
 	delyeet:Dock( TOP )
 	delyeet:SetText( "#Uninstall Selected" )
 	delyeet:SetTall( 30 )
@@ -643,7 +643,7 @@ function PANEL:Init()
 
 	------------------- Addon List
 
-	local Scroll = vgui.Create( "DScrollPanel", self )
+	local Scroll = self:Add("DScrollPanel")
 	Scroll:Dock( FILL )
 	Scroll:DockMargin( 5, 5, 5, 5 )
 	function Scroll:Paint( w, h )
@@ -651,7 +651,7 @@ function PANEL:Init()
 		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor2, false, true, false, true )
 	end
 
-	local AddonList = vgui.Create( "DIconLayout", Scroll )
+	local AddonList = Scroll:Add("DIconLayout")
 	AddonList:SetSpaceX(5)
 	AddonList:SetSpaceY(5)
 	AddonList:Dock(FILL)
@@ -779,7 +779,8 @@ end
 
 function PANEL:RefreshAddons()
 
-	self.AddonList:Clear()
+	local AddonList = self.AddonList
+	AddonList:Clear()
 
 	local grp = self.Groups:GetOptionData( self.Groups:GetSelectedID() )
 	local filter = self.Filters:GetOptionData( self.Filters:GetSelectedID() )
@@ -802,7 +803,7 @@ function PANEL:RefreshAddons()
 		if ( #addns < 1 ) then continue end
 
 		if ( group.title ) then
-			local pnl = self.AddonList:Add( "DLabel" )
+			local pnl = AddonList:Add( "DLabel" )
 			pnl.OwnLine = true
 			pnl:SetFont( "rb655_AddonName" )
 			pnl:SetText( group.title )
@@ -812,7 +813,7 @@ function PANEL:RefreshAddons()
 
 		for k, mod in SortedPairsByMemberValue( addns, Sorting[sort].id ) do
 
-			local pnl = self.AddonList:Add( "MenuAddon" )
+			local pnl = AddonList:Add( "MenuAddon" )
 			pnl.panel = self
 			pnl:SetAddon( mod )
 			pnl:DockMargin( 0, 0, 5, 5 )
