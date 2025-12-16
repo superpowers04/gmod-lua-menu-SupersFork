@@ -21,6 +21,7 @@ local FGColor = Color( 256, 256, 256, 256 )
 local BackgroundColor = Color( 200, 200, 200, 128 )
 local BackgroundColor2 = Color( 200, 200, 200, 255 ) --Color( 0, 0, 0, 100 )
 local BackgroundColor3 = Color( 130, 130, 130, 255 ) --Color( 0, 0, 0, 100 )
+local TEXT_ALIGN_CENTER = TEXT_ALIGN_CENTER
 local missingMat = Material("../html/img/addonpreview.png", "nocull smooth")
 local lastBuild = 0
 local imageCache = {}
@@ -328,7 +329,6 @@ local Addon_Object = {
 			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 18, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 		end
 		if self.queuedAction and not self:queuedAction() then
-			
 			self.queuedAction=nil
 		end
 

@@ -26,13 +26,18 @@ function ToggleFavourite( map )
 
 	LoadFavourites()
 
-	if ( table.HasValue( MapFavourites, map ) ) then -- is favourite, remove it
-		table.remove( MapFavourites, table.KeysFromValue( MapFavourites, map )[ 1 ] )
-	else -- not favourite, add it
-		table.insert( MapFavourites, map )
+	local index = -1
+	for i,v in pairs(MapFavourites) do
+		if(v == map) then index = i; break end
 	end
 
-	cookie.Set( "favmaps", table.concat( MapFavourites, ";" ) )
+	if (index ~= -1) then -- is favourite, remove it
+		table.remove(MapFavourites, index)
+	else -- not favourite, add it
+		table.insert(MapFavourites, map)
+	end
+
+	cookie.Set( "favmaps", table.concat(MapFavourites, ";") )
 
 	RefreshMaps( true )
 

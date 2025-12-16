@@ -1,7 +1,7 @@
 Contributing to Lua Main Menu
 =============
 
-Here's what you need to know if you wish to submit Pull Requests to this repository.
+Here's what you need to know if you wish to submit Pull Requests to THIS repository, NOT THE [MAIN ONE](https://github.com/robotboy655/gmod-lua-menu).
 
 Code Formatting
 =============
@@ -27,13 +27,13 @@ local myTable = {
 	bar = "yes"
 }
 
-if ( type( myTable ) != "table" ) then error( "bad" ) end
+if (type(myTable) ~= "table") then error("bad") end
 
-function Test( myVariable1, myVariable2 )
-	if ( !myVariable2 ) then return "hax" end
+function Test(myVariable1, myVariable2)
+	if (not myVariable2) then return "hax" end
 
-	if ( myTable[ myVariable1 ] ) then
-		return myTable[ myVariable1 ]
+	if (myTable[myVariable1]) then
+		return myTable[myVariable1]
 	end
 
 	return myVariable2
@@ -50,10 +50,10 @@ local myTable =
     bar				= "yes"
 }
 
-if type(myTable) ~= "table" then error "bad" end
+if not (type(myTable) == "table") then error "bad" end
 
 function Test( myVariable1, myVariable2 )
- if not myVariable2 then return "hax" end
+ if myVariable2 == false then return "hax" end
 
  if myTable[myVariable1] then
   return myTable[myVariable1]

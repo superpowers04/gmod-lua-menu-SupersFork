@@ -57,7 +57,7 @@ function PANEL:UpdateList()
 		f = file.Find( "dupes/*.dupe", "MOD", "datedesc" )
 	end
 
-	for k, v in pairs( f ) do
+	for k, v in pairs(f) do
 		if(searchQuery and not v:lower():find(searchQuery)) then continue end
 		local ListItem = List:Add( "DImageButton" )
 		ListItem:SetSize( 128, 128 )

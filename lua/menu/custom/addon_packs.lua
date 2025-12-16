@@ -127,7 +127,7 @@ function PANEL:RegenerateList()
 		return
 	end
 
-	for k, v in pairs( f ) do
+	for k, v in pairs(f) do
 		if(searchQuery && !v:lower():find(searchQuery)) then continue end
 		local ListItem = List:Add("DButton")
 		ListItem:SetText( v:StripExtension() )

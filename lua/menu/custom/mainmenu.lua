@@ -16,52 +16,63 @@ include( "../crosshair_setup.lua" )
 
 pnlMainMenu = nil
 
-local PANEL = {}
-function PANEL:SetSpecial( b )
+local DMenuButton = {}
+function DMenuButton:SetSpecial( b )
 	self.Special = b
 end
 
 local matGradientUp = Material( "gui/gradient_up" )
-function PANEL:Paint( w, h )
+local fgHoverColor,fgDepressedColor = Color( 255, 255, 220 ),Color( 35, 150, 255 )
+
+--  TODO - MAKE COLOR NAMES LESS STUPID
+local drawColorHovered = Color( 34, 168, 238 )
+local drawColorHovered2 = Color( 34, 119, 238 )
+local drawColor = Color( 0, 134, 204 )
+local drawColor2 = Color( 0, 85, 204 )
+local drawColor3 = Color( 0, 53, 128 )
+
+local drawColorHovered3 = Color( 79, 187, 241 )
+local drawColorUnHovered3 = Color( 52, 160, 214 )
+
+function DMenuButton:Paint( w, h )
 	if ( !self.Special ) then
 		self:SetFGColor( color_black )
-		local clr = color_white
-		if ( self.Hovered ) then clr = Color( 255, 255, 220 ) end
-		if ( self.Depressed ) then self:SetFGColor( color_white ) clr = Color( 35, 150, 255 ) end
+		local clr = self.Hovered and fgHoverColor or color_white
+		if ( self.Depressed ) then 
+			self:SetFGColor( color_white ) 
+			clr = fgDepressedColor
+		end
 		draw.RoundedBox( 4, 0, 0, w, h, clr )
 		return
 	end
 	self:SetFGColor( color_white )
-	local clr = self.Hovered and not self.Depressed and Color( 34, 168, 238 ) 
-		or Color( 0, 134, 204 )
 	--draw.RoundedBox( 4, 0, 0, w, h, clr )
 
-	surface.SetDrawColor( clr )
+	surface.SetDrawColor(self.Hovered and not self.Depressed and drawColorHovered 
+		or drawColor)
 	surface.DrawRect( 1, 1, w - 2, h - 2 )
-
-	surface.SetDrawColor( Color( 0, 85, 204 ) )
-	if ( self.Hovered ) then clr = surface.SetDrawColor( Color( 34, 119, 238 ) ) end
+	
+	surface.SetDrawColor(self.Hovered and drawColorHovered2 or drawColor2)
 	surface.SetMaterial( matGradientUp )
 	surface.DrawTexturedRect( 1, 1, w - 2, h - 2 )
 
-	surface.SetDrawColor( Color( 0, 85, 204 ) )
+	surface.SetDrawColor( drawColor2 )
 	--surface.DrawOutlinedRect( 0, 0, w, h )
 
 	surface.DrawLine( 1, 0, w-1, 0 ) -- top
 	surface.DrawLine( 0, 1, 0, h - 1 ) -- left
 	surface.DrawLine( w - 1, 1, w - 1, h - 1 ) -- right
 
-	surface.SetDrawColor( Color( 0, 53, 128 ) )
+	surface.SetDrawColor(drawColor3)
 	surface.DrawLine( 1, h - 1, w-1, h - 1 ) -- bottom
 
-	local clr2 = self.Hovered and not self.Depressed and Color( 79, 187, 241 )
-		or Color( 52, 160, 214 )
-	surface.SetDrawColor( clr2 )
+	surface.SetDrawColor(self.Hovered and not self.Depressed and drawColorHovered3
+		or drawColorUnHovered3)
 	surface.DrawLine( 1, 1, w - 1, 1 )
 	
 end
 
-function PANEL:PerformLayout( w, h )
+function DMenuButton:PerformLayout( w, h )
 	if ( IsValid( self.m_Image ) ) then
 		self.m_Image:SetPos( 5, ( self:GetTall() - self.m_Image:GetTall() ) * 0.5 )
 		self:SetTextInset( 10, 0 )
@@ -70,7 +81,7 @@ function PANEL:PerformLayout( w, h )
 end
 
 
-vgui.Register( "DMenuButton", PANEL, "DButton" )
+vgui.Register( "DMenuButton", DMenuButton, "DButton" )
 
 local PANEL = {}
 
@@ -82,14 +93,15 @@ function PANEL:Init()
 	self:SetKeyboardInputEnabled( true )
 	self:SetMouseInputEnabled( true )
 
-	local lowerPanel = vgui.Create( "DPanel", self )
-	function lowerPanel:Paint( w, h )
-		draw.RoundedBox( 0, 0, 0, w, h, Color( 0, 0, 0, 220 ) )
+	local lowerPanel = self:Add("DPanel")
+	lowerPanel.color = Color( 0, 0, 0, 220 )
+	lowerPanel.Paint = function(self, w, h)
+		draw.RoundedBox(0, 0, 0, w, h, self.color)
 	end
 	lowerPanel:SetTall( 50 )
 	lowerPanel:Dock( BOTTOM )
 
-	local BackButton = vgui.Create( "DMenuButton", lowerPanel )
+	local BackButton = lowerPanel:Add( "DMenuButton")
 	BackButton:Dock( LEFT )
 	BackButton:SetText( "#back_to_main_menu" )
 	BackButton:SetIcon( "icon16/arrow_left.png" )
@@ -105,7 +117,7 @@ function PANEL:Init()
 
 
 
-	local Gamemodes = vgui.Create( "DMenuButton", lowerPanel )
+	local Gamemodes = lowerPanel:Add("DMenuButton")
 	Gamemodes:Dock( RIGHT )
 	Gamemodes:DockMargin( 5, 5, 5, 5 )
 	Gamemodes:SetContentAlignment( 6 )
@@ -113,7 +125,7 @@ function PANEL:Init()
 	self.GamemodeList = Gamemodes
 	self:RefreshGamemodes()
 
-	local MountedGames = vgui.Create( "DMenuButton", lowerPanel )
+	local MountedGames = lowerPanel:Add("DMenuButton")
 	MountedGames:Dock( RIGHT )
 	MountedGames:DockMargin( 5, 5, 0, 5 )
 	MountedGames:SetContentAlignment( 6 )
@@ -123,7 +135,7 @@ function PANEL:Init()
 	MountedGames.DoClick = function() self:OpenMountedGamesList( MountedGames ) end
 	self.MountedGames = MountedGames
 
-	local Languages = vgui.Create( "DMenuButton", lowerPanel )
+	local Languages = lowerPanel:Add("DMenuButton")
 	Languages:Dock( RIGHT )
 	Languages:DockMargin( 5, 5, 0, 5 )
 	Languages:SetContentAlignment( 6 )
@@ -141,7 +153,7 @@ function PANEL:Init()
 	self.Languages = Languages
 
 
-	local Problems = vgui.Create( "DMenuButton", lowerPanel )
+	local Problems = lowerPanel:Add("DMenuButton")
 	Problems:Dock( RIGHT )
 	Problems:DockMargin( 5, 5, 0, 5 )
 	Problems:SetContentAlignment( 6 )
@@ -153,7 +165,7 @@ function PANEL:Init()
 
 	-- If you're reloading the menu for any reason, you probably want this tbh
 	if(MENU_DEBUG) then 
-		local Reload = vgui.Create( "DMenuButton", lowerPanel )
+		local Reload = lowerPanel:Add("DMenuButton")
 		Reload:Dock( RIGHT )
 		Reload:DockMargin( 5, 5, 0, 5 )
 		Reload:SetContentAlignment( 6 )
@@ -206,6 +218,7 @@ function PANEL:CloseAllMenus()
 end
 
 function PANEL:Back()
+	surface.PlaySound( "garrysmod/ui_return.wav" )
 	self:CloseAllMenus()
 	self:OpenMainMenu()
 end
@@ -356,9 +369,9 @@ function PANEL:OpenGamemodesList( pnl )
 	p:SetSpacing( 5 )
 	p:SetPadding( 5 )
 	self.GamemodesList = p
-
+	p.bgColor = Color( 0, 0, 0, 220 )
 	function p:Paint( w, h )
-		draw.RoundedBox( 0, 0, 0, w, h, Color( 0, 0, 0, 220 ) )
+		draw.RoundedBox(0, 0, 0, w, h, self.bgColor)
 	end
 
 	local w = 100

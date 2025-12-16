@@ -5,7 +5,7 @@ concommand.Add( "lua", function( ply, cmd, args, str )
 	RunString( str )
 end )
 
-local PANEL = {}
+local MenuButton = {}
 
 language.Add( "achievements", "Achievements" )
 
@@ -17,48 +17,58 @@ surface.CreateFont( "MenuButton", {
 
 local DLabel = baseclass.Get( "DLabel" )
 
-function PANEL:Init()
+function MenuButton:Init()
 	self:SetFont( "MenuButton" )
 	self:SetCursor( "hand" )
 	self:SetMouseInputEnabled( true )
 	self:SetTextColor( Color( 255, 255, 255 ) )
-
-
+	self:Dock(TOP)
+	self:UpdateColor()
 end
 
-function PANEL:SetText( ... )
+function MenuButton:SetText( ... )
 	DLabel.SetText( self, ... )
 	self:SizeToContents()
 end
 
-function PANEL:SetDisabled( b )
+function MenuButton:SetDisabled( b )
 	self.Disabled = b
 	self:SetCursor( b and "none" or "hand" )
 end
 
-function PANEL:Paint()
-	if ( self.Disabled == true ) then self:SetFGColor( Color( 120, 120, 120 ) ) return end
-	self:SetFGColor(self.Disabled and Color( 120, 120, 120 ) or 
-					self.Hovered and Color( 255, 255, 128 ) or 
-					Color( 255, 255, 255 )
-				)
+local disabledColor,hoveredColor,color = Color( 120, 120, 120 ), Color( 255, 255, 128 ), Color( 255, 255, 255 )
+
+-- function MenuButton:Paint()
+-- 	if (self.Disabled) then self:SetFGColor( Color( 120, 120, 120 ) ) return end
+-- 	self:SetFGColor(self.Hovered and Color( 255, 255, 128 ) or Color( 255, 255, 255 ))
+-- end
+function MenuButton:UpdateColor()
+	self:SetFGColor(
+		self.Disabled and disabledColor
+		or self.Hovered and hoveredColor 
+		or Color( 255, 255, 255 )
+	)
 end
 
-function PANEL:OnCursorEntered()
+function MenuButton:OnCursorEntered()
 	self.Hovered = true
-	if ( !self.Disabled ) then surface.PlaySound( "garrysmod/ui_hover.wav" ) end
+	self:UpdateColor()
+	if (self.Disabled) then return end 
+	surface.PlaySound( "garrysmod/ui_hover.wav" )
 end
-function PANEL:OnCursorExited()
+function MenuButton:OnCursorExited()
 	self.Hovered = false
+	if (self.Disabled) then return end 
+	self:UpdateColor()
 end
 
-function PANEL:OnMousePressed()
+function MenuButton:OnMousePressed()
 	if self.Disabled then return end
 	DLabel.OnMousePressed( self )
 	surface.PlaySound( "garrysmod/ui_click.wav" )
 end
 
-vgui.Register( "MenuButton", PANEL, "DLabel" )
+vgui.Register( "MenuButton", MenuButton, "DLabel" )
 
 local PANEL = {}
 
@@ -66,7 +76,7 @@ function PANEL:Init()
 
 	self:Dock( FILL )
 
-	local mainButtons = vgui.Create( "DPanel", self )
+	local mainButtons = self:Add("DPanel")
 	function mainButtons:Paint( w, h )
 		---draw.RoundedBox( 0, 0, 0, w, h, Color( 0, 0, 0, 200 ) )
 		self:SetPos( ScrW() / 20, math.max( ScrH() / 2 - self:GetTall() / 2, 150 ) )
@@ -74,8 +84,7 @@ function PANEL:Init()
 	mainButtons:SetSize( 250, 450 )
 	self.MenuButtons = mainButtons
 
-	local Resume = vgui.Create( "MenuButton", mainButtons )
-	Resume:Dock( TOP )
+	local Resume = mainButtons:Add("MenuButton")
 	Resume:DockMargin( 5, 5, 5, 20 )
 	Resume:SetText( "#resume_game" )
 	Resume.DoClick = function()
@@ -83,63 +92,56 @@ function PANEL:Init()
 	end
 	self.Resume = Resume
 
-	local NewGame = vgui.Create( "MenuButton", mainButtons )
-	NewGame:Dock( TOP )
+	local NewGame = mainButtons:Add("MenuButton")
 	NewGame:DockMargin( 5, 5, 5, 0 )
 	NewGame:SetText( "#new_game" )
 	NewGame.DoClick = function()
 		self:GetParent():OpenNewGameMenu()
 	end
 
-	local PlayMP = vgui.Create( "MenuButton", mainButtons )
-	PlayMP:Dock( TOP )
+	local PlayMP = mainButtons:Add("MenuButton")
 	PlayMP:DockMargin( 5, 0, 5, 0 )
 	PlayMP:SetText( "#find_mp_game" )
 	PlayMP.DoClick = function()
 		RunGameUICommand( "OpenServerBrowser" )
 	end
 
-	local Addons = vgui.Create( "MenuButton", mainButtons )
-	Addons:Dock( TOP )
+	local Addons = mainButtons:Add("MenuButton")
 	Addons:DockMargin( 5, 20, 5, 0 )
 	Addons:SetText( "#addons" )
 	Addons.DoClick = function()
 		self:GetParent():OpenAddonsMenu()
 	end
 
-	local AddonPacks = vgui.Create( "MenuButton", mainButtons )
-	AddonPacks:Dock( TOP )
+	local AddonPacks = mainButtons:Add("MenuButton")
 	AddonPacks:DockMargin( 5, 20, 5, 0 )
 	AddonPacks:SetText( "Addon Packs(WIP)" )
 	AddonPacks.DoClick = function()
 		self:GetParent():OpenAddonPacksMenu()
 	end
 
-	local Saves = vgui.Create( "MenuButton", mainButtons )
-	Saves:Dock( TOP )
+	local Saves = mainButtons:Add("MenuButton")
 	Saves:DockMargin( 5, 0, 5, 0 )
 	Saves:SetText( "#saves" )
 	Saves.DoClick = function()
 		self:GetParent():OpenSavesMenu( false, "saves" )
 	end
 
-	local Demos = vgui.Create( "MenuButton", mainButtons )
-	Demos:Dock( TOP )
+	local Demos = mainButtons:Add("MenuButton")
 	Demos:DockMargin( 5, 0, 5, 0 )
 	Demos:SetText( "#demos" )
 	Demos.DoClick = function()
 		self:GetParent():OpenSavesMenu( false, "demos" )
 	end
 
-	local Achievements = vgui.Create( "MenuButton", mainButtons )
-	Achievements:Dock( TOP )
+	local Achievements = mainButtons:Add("MenuButton")
 	Achievements:DockMargin( 5, 0, 5, 0 )
 	Achievements:SetText( "#achievements" )
 	Achievements.DoClick = function()
 		self:GetParent():OpenAchievementsMenu()
 	end
 
-	local Options = vgui.Create( "MenuButton", mainButtons )
+	local Options = mainButtons:Add("MenuButton")
 	Options:Dock( TOP )
 	Options:SetText( "#options" )
 	Options:DockMargin( 5, 20, 5, 20 )
@@ -147,7 +149,7 @@ function PANEL:Init()
 		RunGameUICommand( "OpenOptionsDialog" )
 	end
 
-	local Disconnect = vgui.Create( "MenuButton", mainButtons )
+	local Disconnect = mainButtons:Add("MenuButton")
 	Disconnect:Dock( TOP )
 	Disconnect:SetText( "#disconnect" )
 	Disconnect:DockMargin( 5, 5, 5, 0 )
@@ -156,7 +158,7 @@ function PANEL:Init()
 	end
 	self.Disconnect = Disconnect
 
-	local Quit = vgui.Create( "MenuButton", mainButtons )
+	local Quit = mainButtons:Add("MenuButton")
 	Quit:Dock( TOP )
 	Quit:SetText( "#quit" )
 	Quit:DockMargin( 5, 0, 5, 0 )
