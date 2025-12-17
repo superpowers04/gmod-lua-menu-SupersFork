@@ -107,7 +107,7 @@ local Addon_Object = {
 		if ( mousecode ~= MOUSE_RIGHT ) then 
 
 			if(input.IsShiftDown() and input.IsControlDown()) then
-				self:SetSelected(!self:GetSelected())
+				self:SetAddonState(!self:GetAddonState())
 				self:updateModStuffs()
 				return
 			end
