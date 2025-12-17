@@ -63,6 +63,7 @@ local Addon_Object = {
 	end,
 	
 	updateModStuffs = function(self)
+		surface.PlaySound( "garrysmod/ui_hover.wav" )
 		PANEL.modImage:SetMaterial(self.Image or missingMat)
 		PANEL.modText:SetBGColor(BackgroundColor3)
 		PANEL.modText:SetFGColor(FGColor)
@@ -95,7 +96,6 @@ local Addon_Object = {
 			end
 
 		end
-
 		PANEL.modText:SetText(table.concat(text,'\n'))
 	end,
 	OnMouseReleased = function (self, mousecode)
@@ -106,6 +106,11 @@ local Addon_Object = {
 		end
 		if ( mousecode ~= MOUSE_RIGHT ) then 
 
+			if(input.IsShiftDown() and input.IsControlDown()) then
+				self:SetSelected(!self:GetSelected())
+				self:updateModStuffs()
+				return
+			end
 			if(input.IsShiftDown()) then
 				local start_of_enabled = -1
 				local diff = 10000
@@ -138,16 +143,17 @@ local Addon_Object = {
 						addon:SetSelected(false)
 					end
 				end
-				self:updateModStuffs()
 			end
 
 			self:SetSelected(!self:GetSelected())
 			self:updateModStuffs()
+
 			
 			return
 		end
 
 		local m = DermaMenu()
+		m.OnMouseReleased = function() surface.PlaySound( "garrysmod/ui_click.wav" ) end
 
 		if ( !self.panel.ToggleMounted:GetDisabled() ) then
 			m:AddOption( "Invert Selection", function() self.panel:InvertSelection() end )
@@ -248,6 +254,10 @@ local Addon_Object = {
 		
 	end,
 	UpdateIcon = function(self)
+		if(not self.AdditionalData or not self.AdditionalData.previewid) then
+			self.Image=missingMat
+			return
+		end
 		if (imageCache[ self.AdditionalData.previewid ]) then
 			self.Image = imageCache[ self.AdditionalData.previewid ]
 			return
