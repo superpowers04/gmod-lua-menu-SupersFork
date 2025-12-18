@@ -56,9 +56,9 @@ local Addon_Object = {
 
 		self.Selected = false
 
-		local DermaCheckbox = vgui.Create( "DCheckBox", self )
-		DermaCheckbox:SetPos( 10, 10 )
-		DermaCheckbox:SetValue( 0 )
+		local DermaCheckbox = self:Add("DCheckBox")
+		DermaCheckbox:SetPos(10, 10)
+		DermaCheckbox:SetValue(false)
 		self.DermaCheckbox = DermaCheckbox
 	end,
 	
@@ -67,7 +67,7 @@ local Addon_Object = {
 		PANEL.modImage:SetMaterial(self.Image or missingMat)
 		PANEL.modText:SetBGColor(BackgroundColor3)
 		PANEL.modText:SetFGColor(FGColor)
-		local text = {self.Addon.title,''}
+		local text = {}
 		if(self.AdditionalData) then
 			local data = self.AdditionalData
 			text[#text+1] = data.description
@@ -96,7 +96,10 @@ local Addon_Object = {
 			end
 
 		end
+		PANEL.modNameText:SetText(self.Addon.title)
+
 		PANEL.modText:SetText(table.concat(text,'\n'))
+		PANEL.modText:GotoTextStart()
 	end,
 	OnMouseReleased = function (self, mousecode)
 		if ( mousecode == MOUSE_MIDDLE ) then 
@@ -321,7 +324,7 @@ local Addon_Object = {
 		surface.SetMaterial( self.Image or missingMat)
 		local tall,wide = self:GetTall(),self:GetWide()
 		local imageSize = tall - 10
-		surface.SetDrawColor( color_white )
+		surface.SetDrawColor(color_white)
 		surface.DrawTexturedRect( 5, 5, imageSize, imageSize )
 
 		--[[if ( self.Addon and !steamworks.ShouldMountAddon( self.Addon.wsid ) ) then
@@ -503,11 +506,19 @@ function PANEL:Init()
 
 	--[[ ------------------------------------------------------------------------- ]]
 
+	local modNameText = Categories:Add("DLabel")
+	modNameText:Dock( TOP )
+	modNameText:SetText('N/A')
+	modNameText:DockMargin( 5,5,5,5 )
+	modNameText:SetFont("rb655_AddonDesc")
+	modNameText:SetTextColor(color_white)
+	
+	PANEL.modNameText = modNameText
+	
 	local modImage = Categories:Add("DImage")
 	modImage:Dock( TOP )
 	modImage:SetWidth( 350 )
 	modImage:SetHeight( 350 )
-	modImage:SetZPos( -1 )
 	modImage:DockMargin( 0, 0, 0, 0 )
 	modImage:SetMaterial(missingMat)
 
@@ -516,19 +527,17 @@ function PANEL:Init()
 	local modText = Categories:Add("RichText")
 	modText:Dock( TOP )
 	modText:SetTall( 300 )
-	modText:SetZPos( -1 )
 	modText:DockMargin( 0, 0, 0, 20 )
 
 	PANEL.modText = modText
 
 
 	--[[ ------------------------------------------------------------------------- ]]
-	local searchBar = Categories:Add("DFancyTextEntry")
+	local searchBar = Categories:Add("DTextEntry")
 	searchBar:Dock( TOP )
 	searchBar:SetFont( "DermaRobotoDefault" )
 	searchBar:SetPlaceholderText( "searchbar_placeholer" )
 	searchBar:DockMargin( 0, 0, 0, 20 )
-	searchBar:SetZPos( -1 )
 	searchBar:SetHeight( 24 )
 	searchBar:SetUpdateOnType( true )
 	searchBar.OnValueChange = function() 

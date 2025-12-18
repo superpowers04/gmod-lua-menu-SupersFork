@@ -62,6 +62,7 @@ function PANEL:UpdateList()
 		local ListItem = List:Add( "DImageButton" )
 		ListItem:SetSize( 128, 128 )
 		ListItem:SetImage( self.Type .. "/" .. v:StripExtension() .. ".jpg" )
+		ListItem:SetTooltip(v)
 		ListItem.DoDoubleClick = function()
 			if ( self.Type == "saves" ) then
 				RunConsoleCommand( "gm_load", "saves/" .. v )
