@@ -315,6 +315,7 @@ local Addon_Object = {
 		-- if ( IsValid(self.DermaCheckbox) ) then
 		-- 	self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
 		-- end
+		if not h then return end
 		if ( self:GetSelected() ) then
 			draw.RoundedBox( 4, 0, 0, w, h, selectedColor )
 		end
