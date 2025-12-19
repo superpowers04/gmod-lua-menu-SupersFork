@@ -94,7 +94,7 @@ local Addon_Pack_Object = {
 			self:RegenerateList()
 		end )
 		m:AddOption( "Overwrite", function()
-			self:savePack(self.file)
+			PANEL:savePack(self.file)
 		end )
 		m:AddOption( "Cancel" )
 		m:Open()

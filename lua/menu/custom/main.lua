@@ -112,7 +112,7 @@ function PANEL:Init()
 	Addons.DoClick = function()
 		self:GetParent():OpenAddonsMenu()
 	end
-
+	
 	local AddonPacks = mainButtons:Add("MenuButton")
 	AddonPacks:DockMargin( 5, 20, 5, 0 )
 	AddonPacks:SetText( "Addon Packs(WIP)" )
