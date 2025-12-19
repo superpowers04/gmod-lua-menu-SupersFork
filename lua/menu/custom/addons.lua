@@ -25,6 +25,8 @@ local LinkColor = Color(192, 192, 255, 255)
 local BackgroundColor = Color(200, 200, 200, 128)
 local BackgroundColor2 = Color(200, 200, 200, 255) --Color( 0, 0, 0, 100 )
 local BackgroundColor3 = Color(130, 130, 130, 255) --Color( 0, 0, 0, 100 )
+local missingColor = Color(255,0,0,255)
+local invalidColor = Color(255,150,0,255)
 local TEXT_ALIGN_CENTER = TEXT_ALIGN_CENTER
 local missingMat = Material("../html/img/addonpreview.png", "nocull smooth")
 local lastBuild = 0
@@ -93,13 +95,12 @@ local Addon_Object = {
 				-- print(gDataTable[id].title, tostring(id))
 				local title = gDataTable[id] and gDataTable[id].title
 				if(title) then
-					modText:InsertColorChange((steamworks.ShouldMountAddon(id) and enabledColor or selectedColor):Unpack())
-
+					modText:InsertColorChange((steamworks.ShouldMountAddon(id) and enabledColor or missingColor):Unpack())
 				else
-					modText:InsertColorChange(255,150,0,255)
+					modText:InsertColorChange(invalidColor:Unpack())
 				end
 				modText:InsertClickableTextStart(tostring(id))
-				modText:AppendText(title or (id .. "(Not Loaded)"))
+				modText:AppendText(title or (id .. "(Missing)"))
 				modText:InsertClickableTextEnd()
 				modText:InsertColorChange(FGColor:Unpack())
 			end
@@ -134,14 +135,19 @@ local Addon_Object = {
 
 				local m = DermaMenu(BackgroundColor3)
 				-- TODO, DO THIS PROPERLY INSTEAD OF JUST ADDING SPACES
-				local idLabel = Label('    ID: ' .. id)
+				local idLabel = Label('  ID: ' .. id)
 				idLabel:SetTextColor(color_black)
 				m:AddPanel(idLabel)
+				local stateLabel = Label('  State: ' .. ((not steamworks.IsSubscribed(id) and "Not Subbed") or steamworks.ShouldMountAddon(id) and "Mounted" or "Not Mounted"))
+				stateLabel:SetTextColor(color_black)
+				m:AddPanel(stateLabel)
 				m:AddSpacer()
 				if(gDataTable[id]) then
 					local panel_object = gDataTable[id].panel_object
 					if IsValid(panel_object) then
+						
 						panel_object:AppendContextMenu(m)
+
 						if(table.HasValue(PANEL.AddonList:GetChildren(),panel_object)) then
 							m:AddOption("Scroll to", function() PANEL.Scroll:ScrollToChild(panel_object) end)
 						end
@@ -227,6 +233,15 @@ local Addon_Object = {
 		local m = DermaMenu()
 		m.OnMouseReleased = function() surface.PlaySound( "garrysmod/ui_click.wav" ) end
 
+		if(self.Addon and self.Addon.wsid) then
+			local idLabel = Label('  ID: ' .. self.Addon.wsid)
+			idLabel:SetTextColor(color_black)
+			m:AddPanel(idLabel)
+			local stateLabel = Label('  State: ' .. (steamworks.ShouldMountAddon(self.Addon.wsid) and "Mounted" or "Not Mounted"))
+			stateLabel:SetTextColor(color_black)
+			m:AddPanel(stateLabel)
+			m:AddSpacer()
+		end
 		if ( !self.panel.ToggleMounted:GetDisabled() ) then
 			m:AddOption( "Invert Selection", function() self.panel:InvertSelection() end )
 			m:AddSpacer()
