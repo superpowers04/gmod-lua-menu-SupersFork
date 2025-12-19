@@ -16,11 +16,15 @@ gDataTable = gDataTable or {}
 local PANEL = {
 	anyAddonChanged=false,
 }
+-- TODO WARN IF MOD REQUIRES ANOTHER MOD THAT ISN'T ENABLED
+
+
 local searchQuery = nil
-local FGColor = Color( 256, 256, 256, 256 )
-local BackgroundColor = Color( 200, 200, 200, 128 )
-local BackgroundColor2 = Color( 200, 200, 200, 255 ) --Color( 0, 0, 0, 100 )
-local BackgroundColor3 = Color( 130, 130, 130, 255 ) --Color( 0, 0, 0, 100 )
+local FGColor = Color(256, 256, 256, 256)
+local LinkColor = Color(192, 192, 255, 255)
+local BackgroundColor = Color(200, 200, 200, 128)
+local BackgroundColor2 = Color(200, 200, 200, 255) --Color( 0, 0, 0, 100 )
+local BackgroundColor3 = Color(130, 130, 130, 255) --Color( 0, 0, 0, 100 )
 local TEXT_ALIGN_CENTER = TEXT_ALIGN_CENTER
 local missingMat = Material("../html/img/addonpreview.png", "nocull smooth")
 local lastBuild = 0
@@ -64,9 +68,10 @@ local Addon_Object = {
 	
 	updateModStuffs = function(self)
 		surface.PlaySound( "garrysmod/ui_hover.wav" )
+		local modText = PANEL.modText
 		PANEL.modImage:SetMaterial(self.Image or missingMat)
-		PANEL.modText:SetBGColor(BackgroundColor3)
-		PANEL.modText:SetFGColor(FGColor)
+		modText:SetBGColor(BackgroundColor3)
+		modText:SetFGColor(FGColor)
 		local text = {}
 		if(self.AdditionalData) then
 			local data = self.AdditionalData
@@ -77,28 +82,92 @@ local Addon_Object = {
 			if(#data.content_descriptors > 0) then
 				text[#text+1] = "Content Descriptors: " .. table.concat( data.content_descriptors, ", ")
 			end
-			if(#data.children > 0) then
-				local dependsOn = {}
-				for i,id in ipairs(data.children) do
-					local id = tostring(id)
-					dependsOn[#dependsOn+1] = gDataTable[id] and gDataTable[id].title or id .. '(N/A)'
-				end
-				text[#text+1] = "\nRequires: " .. table.concat( dependsOn, ", ")
-			end
-			if(data.dependants) then
-				local dependants = {}
-				for id in pairs(data.dependants) do
-					dependants[#dependants+1] = gDataTable[id] and gDataTable[id].title or id .. '(N/A)'
-				end
-				if(#dependants > 0) then
-					text[#text+1] = "\nRequired by: " .. table.concat( dependants, ", ")
-				end
-			end
 
 		end
 		PANEL.modNameText:SetText(self.Addon.title)
+		modText:SetText(table.concat(text,'\n'))
 
-		PANEL.modText:SetText(table.concat(text,'\n'))
+		if(self.AdditionalData) then
+			local data = self.AdditionalData
+			local function appendModId(id)
+				-- print(gDataTable[id].title, tostring(id))
+				local title = gDataTable[id] and gDataTable[id].title
+				if(title) then
+					modText:InsertColorChange(255,150,0,255)
+
+				else
+					modText:InsertColorChange(255,150,0,255)
+				end
+				modText:InsertClickableTextStart(tostring(id))
+				modText:AppendText(title or (id .. "(Not Loaded)"))
+				modText:InsertClickableTextEnd()
+				modText:InsertColorChange(FGColor:Unpack())
+			end
+			if(data.children and #data.children > 0) then
+				PANEL.modText:AppendText("\nRequires: ")
+				local putComma = false
+				for i,id in ipairs(data.children) do
+					if(putComma) then
+						PANEL.modText:AppendText(", ")
+					else
+						putComma = true
+					end
+					local id = tostring(id)
+					appendModId(id)
+				end
+			end
+			if(data.dependants and table.HasValue(data.dependants, true)) then
+				local dependants = {}
+				modText:AppendText("\nRequired By: ")
+				local putComma = false
+				for id in pairs(data.dependants) do
+					if(putComma) then
+						PANEL.modText:AppendText(", ")
+					else
+						putComma = true
+					end
+					local id = tostring(id)
+					appendModId(id)
+				end
+			end
+			modText.OnTextClicked = function(self, id)
+
+				local m = DermaMenu(BackgroundColor3)
+				-- TODO, DO THIS PROPERLY INSTEAD OF JUST ADDING SPACES
+				local idLabel = Label('    ID: ' .. id)
+				idLabel:SetTextColor(color_black)
+				m:AddPanel(idLabel)
+				m:AddSpacer()
+				if(gDataTable[id]) then
+					local panel_object = gDataTable[id].panel_object
+					if IsValid(panel_object) then
+						panel_object:AppendContextMenu(m)
+						if(table.HasValue(PANEL.AddonList:GetChildren(),panel_object)) then
+							m:AddOption("Scroll to", function() PANEL.Scroll:ScrollToChild(panel_object) end)
+						end
+					else
+						m:AddOption( "Open Workshop Page", function() 
+							steamworks.ViewFile(id)
+						end)
+					end
+				else
+					m:AddPanel(Label("   Debug: Addon missing?"))
+					m:AddOption( "Open Workshop Page", function() 
+						steamworks.ViewFile(id)
+					end)
+				end
+				if not steamworks.IsSubscribed(id) then
+					m:AddOption( "Subscribe", function() 
+						steamworks.Subscribe(id)
+					end)
+				end
+				
+				m:AddSpacer()
+				m:AddOption( "Cancel", function() end )
+				m:Open()
+			end
+		end
+
 		PANEL.modText:GotoTextStart()
 	end,
 	OnMouseReleased = function (self, mousecode)
@@ -162,33 +231,37 @@ local Addon_Object = {
 			m:AddOption( "Invert Selection", function() self.panel:InvertSelection() end )
 			m:AddSpacer()
 		end
-		if ( self.Addon ) then
-			m:AddOption( "Open Workshop Page", function() 
-				steamworks.ViewFile( self.Addon.wsid )
-			end)
-			m:AddSpacer()
-			local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
-			if(should_mount_addon) then
-				m:AddOption("Disable", function() self:DisableAddon() end)
-			else
-				m:AddOption("Enable", function() self:EnableAddon() end)
-			end
-			if(self.AdditionalData) then
-				for _ in pairs(self.AdditionalData.dependants) do
-					m:AddOption("Select all dependants", function() self:SelectDependants() end)
-					break
-				end
-				if(#self.AdditionalData.children) then
-					m:AddOption("Select all related", function() self:SelectRelated() end)
-				end
-			end
-
-			m:AddOption( "Uninstall", function() self:UninstallAddon() end) 
-		end
+		self:AppendContextMenu(m)
 		m:AddSpacer()
 		m:AddOption( "Cancel", function() end )
 		m:Open()
 		self:updateModStuffs()
+	end,
+
+	AppendContextMenu = function(self, menu)
+		if self.Addon then
+			menu:AddOption( "Open Workshop Page", function() 
+				steamworks.ViewFile( self.Addon.wsid )
+			end)
+			menu:AddSpacer()
+			local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
+			if(should_mount_addon) then
+				menu:AddOption("Disable", function() self:DisableAddon() end)
+			else
+				menu:AddOption("Enable", function() self:EnableAddon() end)
+			end
+			if(self.AdditionalData) then
+				for _ in pairs(self.AdditionalData.dependants) do
+					menu:AddOption("Select all dependants", function() self:SelectDependants() end)
+					break
+				end
+				if(#self.AdditionalData.children) then
+					menu:AddOption("Select all related", function() self:SelectRelated() end)
+				end
+			end
+
+			menu:AddOption( "Uninstall", function() self:UninstallAddon() end) 
+		end
 	end,
 
 	SetAddonState = function(self, state)
@@ -363,16 +436,22 @@ local AddonFilters = {
 	},
 	enabled = {
 		label = "Enabled",
-		func = function( mod )
-			return mod.mounted
+		func = function(mod)
+			return steamworks.ShouldMountAddon(mod.wsid)
 		end
 	},
 	disabled = {
 		label = "Disabled",
-		func = function( mod )
-			return !mod.mounted
+		func = function(mod)
+			return !steamworks.ShouldMountAddon(mod.wsid)
 		end
 	},
+	-- selected_mod_relations = {
+	-- 	label = "Related to selected mod",
+	-- 	func = function(mod)
+	-- 		return true
+	-- 	end
+	-- },
 }
 
 local Sorting = {
@@ -670,6 +749,8 @@ function PANEL:Init()
 		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor, false, true, false, true )
 		draw.RoundedBoxEx( 4, 0, 0, w, h, BackgroundColor2, false, true, false, true )
 	end
+	PANEL.Scroll = Scroll
+	self.Scroll = Scroll
 
 	local AddonList = Scroll:Add("DIconLayout")
 	AddonList:SetSpaceX(5)
