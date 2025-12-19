@@ -403,7 +403,6 @@ local Addon_Object = {
 		-- if ( IsValid(self.DermaCheckbox) ) then
 		-- 	self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
 		-- end
-		if not w or not h then return end
 		if ( self:GetSelected() ) then
 			draw.RoundedBox( 4, 0, 0, w, h, selectedColor )
 		end
@@ -423,7 +422,7 @@ local Addon_Object = {
 		if ( self.Hovered ) then
 			draw.RoundedBox( 0, 5, h - 20, w - 10, 15, Color( 0, 0, 0, 180 ) )
 			local title = self.Addon and self.Addon.title or "N/A"
-			local tw = surface.GetTextSize( title )
+			local tw = surface.GetTextSize( title ) or (#title * 12)
 			local offset = 0
 			if ( tw > w ) then
 				offset=( ( w - tw ) * math.sin( CurTime() ) )
