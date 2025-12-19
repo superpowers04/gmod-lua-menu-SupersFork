@@ -93,7 +93,7 @@ local Addon_Object = {
 				-- print(gDataTable[id].title, tostring(id))
 				local title = gDataTable[id] and gDataTable[id].title
 				if(title) then
-					modText:InsertColorChange(steamworks.ShouldMountAddon(id) and color.enabledColor or color.selectedColor)
+					modText:InsertColorChange(steamworks.ShouldMountAddon(id) and enabledColor or selectedColor)
 
 				else
 					modText:InsertColorChange(255,150,0,255)
