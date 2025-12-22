@@ -27,17 +27,22 @@ local myTable = {
 	bar = "yes"
 }
 
-if (type(myTable) ~= "table") then error("bad") end
+if type(myTable) ~= "table" then error("bad") end
 
 function Test(myVariable1, myVariable2)
-	if (not myVariable2) then return "hax" end
+	if not myVariable2 then return "hax" end
 
-	if (myTable[myVariable1]) then
+	if myTable[myVariable1] then
 		return myTable[myVariable1]
+	end
+	if (myVariable1 == myVariable2 or not myVariable1) then
+		return "hax pt2"
 	end
 
 	return myVariable2
 end
+
+print(Test('a',true), Test('a','a'), Test(nil,false), meem.test and "blue" or "red")
 ```
 
 Bad:
@@ -53,12 +58,20 @@ local myTable =
 if not (type(myTable) == "table") then error "bad" end
 
 function Test( myVariable1, myVariable2 )
- if myVariable2 == false then return "hax" end
+ if myVariable2 == false then 
+ return 
+ "hax" end
 
- if myTable[myVariable1] then
+ if (myTable[myVariable1] )then
   return myTable[myVariable1]
 		end
-
+	  if myVariable1 == myVariable2 or (not myVariable1) then
+  return 
+  "hax pt2"
+    end
  return myVariable2
 end
+if(meem.test) then
+        print(Test('a',true), Test('a','a'), Test(nil,false), "blue")
+else			print(Test('a',true), Test('a','a'), Test(nil,false), "red")       end
 ```

@@ -21,6 +21,7 @@ local PANEL = {
 
 local searchQuery = nil
 local FGColor = Color(256, 256, 256, 256)
+local TextBGColor = Color(0, 0, 0, 180)
 local LinkColor = Color(192, 192, 255, 255)
 local BackgroundColor = Color(200, 200, 200, 128)
 local BackgroundColor2 = Color(200, 200, 200, 255) --Color( 0, 0, 0, 100 )
@@ -28,6 +29,7 @@ local BackgroundColor3 = Color(130, 130, 130, 255) --Color( 0, 0, 0, 100 )
 local missingColor = Color(255,0,0,255)
 local invalidColor = Color(255,150,0,255)
 local TEXT_ALIGN_CENTER = TEXT_ALIGN_CENTER
+local missingAddonMat = Material("materials/gui/noicon.png", "nocull smooth")
 local missingMat = Material("../html/img/addonpreview.png", "nocull smooth")
 local lastBuild = 0
 local imageCache = {}
@@ -77,13 +79,17 @@ local Addon_Object = {
 		local text = {}
 		if(self.AdditionalData) then
 			local data = self.AdditionalData
-			text[#text+1] = data.description
-			text[#text+1] = "\nSize: " .. fileSize(data.size)
+			text[#text+1] = data.description ..'(...)'
+			text[#text+1] = ("id: %s"):format(tostring(self.Addon.wsid))
+			text[#text+1] = ("\nSize: %s"):format(fileSize(data.size))
+			text[#text+1] = ("previewid: %s"):format(tostring(data.previewid))
 			text[#text+1] = ("Score: %.2f"):format(data.score)
 			text[#text+1] = ("Upvotes/Downvotes: %i/%i"):format(data.up,data.down)
 			if(#data.content_descriptors > 0) then
 				text[#text+1] = "Content Descriptors: " .. table.concat( data.content_descriptors, ", ")
 			end
+		else
+			text[#text+1] = ("id: %s"):format(tostring(self.Addon.wsid))
 
 		end
 		PANEL.modNameText:SetText(self.Addon.title)
@@ -135,6 +141,7 @@ local Addon_Object = {
 
 				local m = DermaMenu(BackgroundColor3)
 				-- TODO, DO THIS PROPERLY INSTEAD OF JUST ADDING SPACES
+				-- TODO, RELOAD MODTEXT WHEN SOMETHING IS CHANGED THROUGH THIS MENU
 				local idLabel = Label('  ID: ' .. id)
 				idLabel:SetTextColor(color_black)
 				m:AddPanel(idLabel)
@@ -172,6 +179,13 @@ local Addon_Object = {
 				m:AddOption( "Cancel", function() end )
 				m:Open()
 			end
+		end
+
+
+		if(self.Image == missingAddonMat) then
+			modText:InsertColorChange(invalidColor:Unpack())
+			modText:AppendText("\n\nAddon thumbnail was unable to be read, It's probably in an invalid format (Expects png, or jpg)")
+			modText:InsertColorChange(FGColor:Unpack())
 		end
 
 		PANEL.modText:GotoTextStart()
@@ -259,11 +273,20 @@ local Addon_Object = {
 				steamworks.ViewFile( self.Addon.wsid )
 			end)
 			menu:AddSpacer()
-			local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
-			if(should_mount_addon) then
-				menu:AddOption("Disable", function() self:DisableAddon() end)
+			if(self:IsSubscribed()) then
+				local should_mount_addon = steamworks.ShouldMountAddon( self.Addon.wsid )
+				if(should_mount_addon) then
+					menu:AddOption("Disable", function() self:DisableAddon() end)
+				else
+					menu:AddOption("Enable", function() self:EnableAddon() end)
+				end
+				menu:AddOption( "Uninstall", function() self:UninstallAddon() end) 
 			else
-				menu:AddOption("Enable", function() self:EnableAddon() end)
+				menu:AddOption( "Subscribe", function() self:InstallAddon() end) 
+			end
+			menu:AddSpacer()
+			if(self.Image == missingAddonMat) then
+				menu:AddOption("Redownload thumbnail", function() self:DownloadThumbnail() end)
 			end
 			if(self.AdditionalData) then
 				for _ in pairs(self.AdditionalData.dependants) do
@@ -274,22 +297,37 @@ local Addon_Object = {
 					menu:AddOption("Select all related", function() self:SelectRelated() end)
 				end
 			end
-
-			menu:AddOption( "Uninstall", function() self:UninstallAddon() end) 
 		end
 	end,
 
 	SetAddonState = function(self, state)
+		if(state and not self:IsSubscribed()) then
+			return self:InstallAddon(true)
+		end
 		steamworks.SetShouldMountAddon( self.Addon.wsid, state )
 		PANEL.anyAddonChanged = true
 	end,
 	GetAddonState = function(self) return steamworks.ShouldMountAddon(self.Addon.wsid) end,
 	EnableAddon = function(self) self:SetAddonState(true) end,
 	DisableAddon = function(self) self:SetAddonState(false) end,
+	InstallAddon = function(self, shouldMount) -- 
+		steamworks.Subscribe(self.Addon.wsid)
+		if(shouldMount ~= nil) then
+			steamworks.SetShouldMountAddon(self.Addon.wsid, shouldMount)
+		end
+		PANEL.anyAddonChanged = true
+	end,
 	UninstallAddon = function(self)
 		steamworks.Unsubscribe(self.Addon.wsid)
 		PANEL.anyAddonChanged = true
-	end, -- Do we need ApplyAddons here?
+	end,
+	IsSubscribed = function(self)
+		return self.Addon and steamworks.IsSubscribed(self.Addon.wsid) or false
+	end,
+	IsMounted = function(self)
+		return self.Addon and steamworks.ShouldMountAddon(self.Addon.wsid) or false
+	end,
+
 
 	toggle = function(self) return end,
 	SetSelected = function(self, b) self.DermaCheckbox:SetChecked( b ) end,
@@ -326,6 +364,7 @@ local Addon_Object = {
 
 	UpdateData = function(self, data)
 		self.AdditionalData = data
+		self.Addon.title = data.title
 		self:SetTooltip(data.title)
 		data.panel_object = self
 
@@ -339,7 +378,12 @@ local Addon_Object = {
 	_loadImage = function(self)
 		local curtime = CurTime()
 		if(curtime - lastBuild < 0.02) then return true end
+
 		self.Image = AddonMaterial( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache" )
+		if(self.Image == nil) then
+			self.Image = missingAddonMat
+			MsgN(('%q has an invalid thumbnail!'):format(self.Addon.title or self.Addon.wsid))
+		end
 		imageCache[ self.AdditionalData.previewid ] = self.Image
 		lastBuild = curtime
 		
@@ -349,11 +393,16 @@ local Addon_Object = {
 			self.Image=missingMat
 			return
 		end
-		if (imageCache[ self.AdditionalData.previewid ]) then
-			self.Image = imageCache[ self.AdditionalData.previewid ]
+		local previewid = self.AdditionalData.previewid
+		if not previewid then
+			self.Image=missingAddonMat
 			return
 		end
-		if file.Exists( "cache/workshop/" .. self.AdditionalData.previewid .. ".cache", "MOD" ) then
+		if (imageCache[previewid]) then
+			self.Image = imageCache[previewid]
+			return
+		end
+		if file.Exists( "cache/workshop/" .. previewid .. ".cache", "MOD" ) then
 			self.queuedAction = self._loadImage
 			return
 		end
@@ -361,7 +410,7 @@ local Addon_Object = {
 	SetAddon = function(self, data)
 		self.Image = nil
 		self.Addon = data
-		self:SetTooltip(self.Addon.title)
+		self:SetTooltip(data.title or data.wsid)
 		if not data.wsid then 
 			ErrorNoHaltWithStack("Addon has no workshop id?!")
 			return
@@ -383,19 +432,29 @@ local Addon_Object = {
 
 		steamworks.FileInfo( data.wsid, function( _result )
 			-- gDataTable[ data.wsid ] = result
+			if(not _result or _result.err) then
+				ErrorNoHaltWithStack("Unable to get addon information! ".. _result.err)
+				return
+			end
 			for i,v in pairs(_result) do
 				cached_data[i]=v
 			end
 
-
-			if ( !file.Exists( "cache/workshop/" .. cached_data.previewid .. ".cache", "MOD" ) ) then
-				steamworks.Download( cached_data.previewid, false, function(name) end )
+			if not cached_data.previewid then
+				self.Image = missingAddonMat
+			elseif not file.Exists("cache/workshop/" .. cached_data.previewid .. ".cache", "MOD") then
+				self:DownloadThumbnail()
 			end
 
-			if ( !IsValid(self) ) then return end
+			if not IsValid(self) then return end
+			self:UpdateData(cached_data)
 
 			-- self.panel:RefreshAddons()
-			self:UpdateData(cached_data)
+		end )
+	end,
+	DownloadThumbnail = function(self)
+		print('Downloading ',"cache/workshop/" .. self.AdditionalData.previewid .. ".cache")
+		steamworks.Download(self.AdditionalData.previewid, false, function(name) 
 			self:UpdateIcon()
 		end )
 	end,
@@ -403,13 +462,15 @@ local Addon_Object = {
 		-- if ( IsValid(self.DermaCheckbox) ) then
 		-- 	self.DermaCheckbox:SetVisible( self.Hovered or self.DermaCheckbox.Hovered or self:GetSelected() )
 		-- end
-		if ( self:GetSelected() ) then
+		if self:GetSelected() then
 			draw.RoundedBox( 4, 0, 0, w, h, selectedColor )
 		end
 		
-		draw.RoundedBox( 4, 2, 2, w-4, h-4, self.Addon and steamworks.ShouldMountAddon( self.Addon.wsid ) and enabledColor or disabledColor)
+		draw.RoundedBox( 4, 2, 2, w-4, h-4, self:IsMounted() and enabledColor 
+		                or not self:IsSubscribed() and missingColor 
+		                or disabledColor)
 
-		surface.SetMaterial( self.Image or missingMat)
+		surface.SetMaterial(self.Image or missingMat)
 		local tall,wide = self:GetTall(),self:GetWide()
 		local imageSize = tall - 10
 		surface.SetDrawColor(color_white)
@@ -419,15 +480,20 @@ local Addon_Object = {
 			draw.RoundedBox( 4, 0, 0, w, h, Color( 0, 0, 0, 180 ) )
 		end]]
 
-		if ( self.Hovered ) then
-			draw.RoundedBox( 0, 5, h - 20, w - 10, 15, Color( 0, 0, 0, 180 ) )
+		if self.Hovered then
+			draw.RoundedBox( 0, 5, 5, w - 10, 10, TextBGColor )
+			draw.RoundedBox( 0, 5, h - 20, w - 10, 15, TextBGColor )
+		end
+		if(self.Hovered or self.Image == missingAddonMat) then 
 			local title = self.Addon and self.Addon.title or "N/A"
-			local tw = surface.GetTextSize( title ) or (#title * 12)
-			local offset = 0
-			if ( tw > w ) then
-				offset=( ( w - tw ) * math.sin( CurTime() ) )
+			local tw = surface.GetTextSize(title) or (#title * 12)
+			if ( tw > imageSize ) then
+				local offset = -(((SysTime()*60) % (tw+w))-w)
+				
+				draw.SimpleText( title, "DEFAULT", 5 + offset, h - 18, color_white, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+			else
+				draw.SimpleText( title, "DEFAULT", 5, h - 18, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 			end
-			draw.SimpleText( title, "DEFAULT", w / 2 - tw / 2 + offset, h - 18, color_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 		end
 		if self.queuedAction and not self:queuedAction() then
 			self.queuedAction=nil
@@ -438,6 +504,7 @@ local Addon_Object = {
 }
 
 vgui.Register( "MenuAddon", Addon_Object, "Panel" )
+
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -460,6 +527,53 @@ local AddonFilters = {
 			return !steamworks.ShouldMountAddon(mod.wsid)
 		end
 	},
+	cached = {
+		label = "Cached",
+		func = function()
+			return true
+		end,
+		GetAddons = function()
+			local files = file.Find( "cache/workshop/*.gma", "MOD")
+			for i,v in ipairs(files) do
+				files[i] = {wsid=v:StripExtension()}
+			end
+
+			return files
+		end,
+
+	},
+	-- Popular = {
+	-- 	label = "Popular",
+	-- 	func = function()
+	-- 		return true
+	-- 	end,
+	-- 	GetAddons = function()
+	-- 		-- local files = file.Find( "cache/workshop/*.gma", "MOD")
+
+	-- 		for i,v in ipairs(files) do
+	-- 			files[i] = {wsid=v:StripExtension()}
+	-- 		end
+
+	-- 		return 
+	-- 		-- files
+	-- 	end,
+
+	-- },
+	-- wsfolder = {
+	-- 	label = "Workshop folder",
+	-- 	func = function()
+	-- 		return true
+	-- 	end,
+	-- 	-- GetAddons = function()
+	-- 	-- 	local files = file.Find( "../../../cache/workshop/*.gma", "MOD")
+	-- 	-- 	for i,v in ipairs(files) do
+	-- 	-- 		files[i] = {wsid=v:StripExtension()}
+	-- 	-- 	end
+
+	-- 	-- 	return files
+	-- 	-- end,
+
+	-- },
 	-- selected_mod_relations = {
 	-- 	label = "Related to selected mod",
 	-- 	func = function(mod)
@@ -823,6 +937,7 @@ function PANEL:ToggleSelected()
 	PANEL.anyAddonChanged = true
 end
 
+
 function PANEL:DisableSelected()
 	for id, pnl in pairs( self.AddonList:GetChildren() ) do
 		if ( !pnl.GetSelected or !pnl:GetSelected() ) then continue end
@@ -900,8 +1015,8 @@ function PANEL:RefreshAddons()
 	local grp = self.Groups:GetOptionData( self.Groups:GetSelectedID() )
 	local filter = self.Filters:GetOptionData( self.Filters:GetSelectedID() )
 	local sort = self.Sorts:GetOptionData( self.Sorts:GetSelectedID() )
-
-	local addons = Grouping[ grp ].func( engine.GetAddons() )
+	local AddonFilter = AddonFilters[filter]
+	local addons = Grouping[ grp ].func(AddonFilter.GetAddons and AddonFilter.GetAddons() or engine.GetAddons())
 
 	for id, group in SortedPairsByMemberValue( addons, "title" ) do
 		if ( #group.addons < 1 ) then continue end
@@ -909,7 +1024,7 @@ function PANEL:RefreshAddons()
 		local addns = {}
 		for k, mod in pairs( group.addons ) do
 			if ( (searchQuery and mod.title and not mod.title:lower():find(searchQuery) )
-				or not AddonFilters[filter].func(mod) ) then 
+				or not AddonFilter.func(mod) ) then 
 				continue
 			end
 			table.insert( addns, mod )

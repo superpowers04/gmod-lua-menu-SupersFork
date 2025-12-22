@@ -170,8 +170,8 @@ function PANEL:Init()
 		Reload:DockMargin( 5, 5, 0, 5 )
 		Reload:SetContentAlignment( 6 )
 		Reload:SetText( "Reload Menu" )
-		Reload:SetWide( 125 )
-		Reload:SetIcon( "../html/img/reload.png" )
+		Reload:SetWide( 107 )
+		Reload:SetIcon( "../html/img/error.png" )
 		Reload:SetVisible( MENU_DEBUG and true or false )
 		Reload.DoClick = function()
 			pnlMainMenu:Remove()
@@ -530,11 +530,19 @@ function UpdateMapList()
 	if ( IsValid( pnl.MainMenuPanel ) ) then pnl:OpenMainMenu() end
 	if ( IsValid( pnl.AchievementsFrame ) ) then pnl:OpenAchievementsMenu() end]]
 end
-
-hook.Add( "GameContentChanged", "RefreshMainMenu", function()
-	if ( !IsValid( pnlMainMenu ) ) then return end
-
+local function RefreshMainMenu()
+	if ( not IsValid( pnlMainMenu ) ) then return end
 	pnlMainMenu:RefreshContent()
+end
+
+
+hook.Add( "GameContentChanged", "RefreshMainMenu", RefreshMainMenu)
+
+hook.Add( "LoadGModSaveFailed", "LoadGModSaveFailed", function( str, wsid )
+	local button2 = nil
+	if ( wsid and wsid:len() > 0 and wsid != "0" ) then button2 = "Open map on Steam Workshop" end
+
+	Derma_Query( str, "Failed to load save!", "OK", nil, button2, function() steamworks.ViewFile( wsid ) end )
 end )
 
 timer.Simple( 0, function()
@@ -542,7 +550,7 @@ timer.Simple( 0, function()
 
 	pnlMainMenu = vgui.Create( "MainMenuPanel" )
 
-	hook.Run( "GameContentChanged" )
+	RefreshMainMenu()
 
 	concommand.Add( "reload_mmenu", function( ply, cmd, args, str )
 		MENU_DEBUG = true
