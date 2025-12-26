@@ -2,16 +2,21 @@ Contributing to Lua Main Menu
 =============
 
 Here's what you need to know if you wish to submit Pull Requests to THIS repository, NOT THE [MAIN ONE](https://github.com/robotboy655/gmod-lua-menu).
+Note, a lot of code currently doesn't follow the current code styling rules and I DO plan on fixing that.
 
 Code Formatting
 =============
 
-Your code formatting must be consistent with the rest of the code:
-* Use tabulation to indent your code - TAB size = 4 spaces
-* Use all of the C style Lua in Garry's Mod
-* Use UpperCamelCase for function names
-* Use lowerCamelCase for variable names
-* Do not include variable type in variable names
+Your code formatting should be consistent with the rest of the code:
+* Use tabs to indent your code instead of spaces. Tab size is per user which provides per tab sizing without affecting other users
+* Try to keep to vanilla lua syntax whenever possible(i.e, don't use the C-style aliases like `!` or `&&`)
+	* This makes code needlessly incompatible with text editors using normal lua syntax highlighting
+* Use UpperCamelCase for method names
+* Use lowerCamelCase for field names
+* Use lower_snake_case for local variables
+* Use lua-style ternaries instead of if-statements whenever possible without majorly affecting code performance(`bool and value1 or value2`), this prevents duplicate code. 
+* As a rule of thumb, if a function is run several times for the same result(i.e, `CurTime()`), please store it in a local variable
+* Do not include field type in field names if possible
 
 Examples
 =============
@@ -55,7 +60,7 @@ local myTable =
     bar				= "yes"
 }
 
-if not (type(myTable) == "table") then error "bad" end
+if !(type(myTable) == "table") then error "bad" end
 
 function Test( myVariable1, myVariable2 )
  if myVariable2 == false then 

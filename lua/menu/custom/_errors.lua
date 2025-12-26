@@ -38,9 +38,7 @@ hook.Add( "DrawOverlay", "MenuErrors", function()
 		draw.RoundedBox( 2, v.x, v.y, v.w, height, Color( 240, 240, 240, 255 ) )
 
 		if ( v.last > Recent ) then
-
 			draw.RoundedBox( 2, v.x, v.y, v.w, height, Color( 255, 200, 0, ( v.last - Recent ) * 510 ) )
-
 		end
 
 		surface.SetTextColor( 90, 90, 90, 255 )
