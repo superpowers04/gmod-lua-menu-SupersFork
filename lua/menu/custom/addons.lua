@@ -592,11 +592,15 @@ local Sorting = {
 		id="updated",
 	},
 	{
+		label = "Creation date",
+		id="created",
+	},
+	{
 		label = "Size",
 		id="size",
 	},
 	{
-		label = "Sub date",
+		label = "Time Added(?)",
 		id="timeadded",
 	},
 	{
